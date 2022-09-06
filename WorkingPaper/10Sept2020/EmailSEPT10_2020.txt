@@ -1,0 +1,19 @@
+I hope you are doing well. I apologize for not keeping in touch for over a month. 
+
+I have been dealing with some issues with the model that I am using for the paper. 
+ 
+Let me describe the problems I had in short: The model I use measures the effect of competition on fitness by essentially integrating a competitive kernel (function of alpha vs. trait difference) at individual level, over(normal) trait distributions of a pair of species. If the competitive kernel is Gaussian, then reduction in fitness at species-level would also be a Gaussian function of difference in mean traits of competing species. My expectation was that if a non-continuous (Gaussian with a threshold) kernel was used, then there would be discontinuities in diffuse competitions (given a big assemblage of competing species), leading to convergent trait trajectories. 
+ 
+However, I derived an analytical form of the fitness function subjected to a truncated Gaussian kernel and normally distributed traits. It is still a continuous function with a very slightly different shape as compared to the case of a proper Gaussian kernel, mainly because of the weights of two normal distributions. With this analytical form, the simulation doesn't show the runaway convergent trends. Previously, with numerical approximations, I tried to keep the threshold values large compared to the trait variances, so that directly applying thresholds to the fitness functions would be fair. But, I missed the important detail that two continuous normal trait distributions will make the fitness function continuous as well, regardless of any symmetrical competition kernel. Additionally, the quantitative genetic limit model used here ensures that the trait distributions will largely stay normal under selection and trait variances will not change. 
+ 
+So, given this framework, convergent evolution is possible only if there are bounds on trait values or if the shapes of trait distributions themselves are allowed to change under selection. This obviously expands the framework, but the parameters remain the same. 
+ 
+I am using an alternative Q. Gen. model by Shpak-Kondrashov (1999) (I have attached the refs here) which analyses selection on traits governed by limited but large no. of loci. I am close to completing the simulation scheme and will send out the new aggregate results and patterns soon. 
+ 
+It is tricky to summarize the changes and results in an email but I am hoping that we could meet soon so I can describe my updates in detail. There is much to discuss and I would really appreciate your thoughts on this.  
+ 
+I am really sorry for imposing so many changes and also for not communicating well. 
+
+Regards
+ 
+Mihir Umarani
