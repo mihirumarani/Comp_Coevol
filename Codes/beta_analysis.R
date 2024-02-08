@@ -59,7 +59,7 @@ a<-0
 bs<-seq(-1,1,length.out=100)
 alphas<-matrix(ncol=3,nrow=100)
 omega<-0.5
-t<-0.25
+t<-0.5
 slope=2
 for(i in 1:100){
   b<-bs[i]
@@ -78,7 +78,7 @@ lines(alphas[,3]~bs,col=3)
 beta.gt<-function(a,b,omega,t){
   mean.a<-mean(a)
   int<-0
-  for(i in 1:10000){
+  for(i in 1:100000){
     a1<-sample(a,1)
     b1<-sample(b,1)
     int<-int+((a1-mean.a)*alpha.gt(a1,b1,omega,t))
@@ -91,7 +91,7 @@ beta.gt<-function(a,b,omega,t){
 beta.tri<-function(a,b,slope,t){
   mean.a<-mean(a)
   int<-0
-  for(i in 1:10000){
+  for(i in 1:100000){
     a1<-sample(a,1)
     b1<-sample(b,1)
     int<-int+((a1-mean.a)*alpha.tri(a1,b1,slope,t))
@@ -118,21 +118,62 @@ facet_wrap(vars(ind),scales="free")
 
 
 #Scenario 1: Flat trait distributions 
-means=seq(0.1,0.9, length.out=50)
-a=runif(1000,0.4,0.6)
+means=seq(-4,4,length.out=50)
+a=runif(1000,-1,1)
+
+res1=NULL
+
+for(i in 1:length(means)){
+  
+  b=runif(1000,means[i]-1,means[i]+1)
+  
+  res1=bind_rows(res1,tibble(mean=means[i],
+                       beta_gt=beta.gt(a,b,0.5,0.5),
+                       beta_tri=beta.tri(a,b,2,0.5)))
+  
+}
+
+
+
+#Scenario 2: Normally distributed traits
+
+means=seq(-4,4,length.out=50)
+a=rtruncnorm(1000,-5,5,0,1)
 
 res=NULL
 
 for(i in 1:length(means)){
   
-  b=runif(1000,means[i]-0.1,means[i]+1)
+  b=rtruncnorm(1000,-5,5,means[i],1)
   
   res=bind_rows(res,tibble(mean=means[i],
-                       beta_gt=beta.gt(a,b,0.5,0.25),
-                       beta_tri=beta.tri(a,b,2,0.25)))
+                           beta_gt=beta.gt(a,b,0.5,0.5),
+                           beta_tri=beta.tri(a,b,2,0.5)))
   
 }
 
+res%>%
+  ggplot()+
+  geom_line(aes(mean,beta_gt,col="red"))+
+  geom_line(aes(mean,beta_tri,col="green"))+
+  geom_hline(yintercept=0)+
+  geom_vline(xintercept=0)
+
+
+results=bind_rows(
+  res1%>%
+    pivot_longer(cols=beta_gt:beta_tri,names_to = "kernel",values_to = "beta")%>%
+    mutate(traits="flat"),
+  res%>%
+    pivot_longer(cols=beta_gt:beta_tri,names_to = "kernel",values_to = "beta")%>%
+    mutate(traits="normal"))
+
+results%>%
+  ggplot(aes(mean,beta,col=kernel))+
+  geom_line()+
+  geom_hline(yintercept=0)+
+  geom_vline(xintercept=0)+
+  facet_wrap(~traits)
 
 #plot beta function for normal trait distributions (truncated) and truncated Gaussian kernel
 m=seq(-5,5,length.out=200)
