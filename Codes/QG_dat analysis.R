@@ -2,6 +2,26 @@ library("igraph")
 library("ggplot2")
 library("reshape2")
 
+mnnddat=NULL
+
+setwd="C:/Users/mihir"
+
+files=list.files(pattern="compSK")
+
+for(i in 1:length(files)){
+  
+  dat=read.csv(files[i])%>%as_tibble()
+  
+  mnnddat=bind_rows(mnnddat,
+                    dat%>%
+                      group_by(nloci,reps,omega,t,a1,time)%>%
+                      res=mnnd(trmean)%>%
+                      ungroup())
+                    
+  
+}
+
+
 
 #Necessary functions
 alpha1<-function(a,b,omega,t){

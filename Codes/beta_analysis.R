@@ -1,5 +1,25 @@
 #Functions
 library(truncnorm)
+library(tidyverse)
+
+theme_set(theme_bw())
+theme_update(panel.grid = element_blank(),
+             strip.background = element_rect(fill = 'orange'))
+
+cbpalette <-
+  c(
+    "#E69F00",
+    "#56B4E9",
+    "#009E73",
+    "#F0E442",
+    "#0072B2",
+    "#D55E00",
+    "#CC79A7",
+    "#C5E772",
+    "#4F2CAA"
+  )
+
+
 #Error function
 erfun<-function(x){
   return(2 * pnorm(x * sqrt(2)) - 1)
@@ -25,10 +45,9 @@ alpha.gt<-function(a,b,omega,t){
 }
 
 #Triangle kernel with threshold t
-alpha.tri<-function(a,b,t){
+alpha.tri<-function(a,b,slope,t){
   if(is.na(a)==TRUE | is.na(b)==TRUE){return(0)}
   if(abs(a-b)>t){return(alpha<-0)}
-  slope<-1/t
   if(((a-b)>-t) & ((a-b)<=0)){alpha<-(1+(slope*(a-b)))}
   if(((a-b)>0) & ((a-b)<t)){alpha<-(1-(slope*(a-b)))}
   return(alpha)
@@ -37,26 +56,29 @@ alpha.tri<-function(a,b,t){
 
 #Plot kernels 
 a<-0
-bs<-seq(-5,5,length.out=100)
+bs<-seq(-1,1,length.out=100)
 alphas<-matrix(ncol=3,nrow=100)
-omega<-0.1
-t<-0.25
+omega<-0.5
+t<-0.5
+slope=2
 for(i in 1:100){
   b<-bs[i]
   alphas[i,1]<-alpha.g(a,b,omega)
   alphas[i,2]<-alpha.gt(a,b,omega,t)
-  alphas[i,3]<-alpha.tri(a,b,t)
+  alphas[i,3]<-alpha.tri(a,b,slope,t)
 }
 plot(alphas[,1]~bs,type="l",ylim=c(-0.2,1.3))
 lines(alphas[,2]~bs,col=2)
 lines(alphas[,3]~bs,col=3)
 
 
+
+
 #This function gives beta functions for three kernel functions for a given pair of trait distributions
-beta.num<-function(a,b,omega,t){
+beta.gt<-function(a,b,omega,t){
   mean.a<-mean(a)
   int<-0
-  for(i in 1:10000){
+  for(i in 1:100000){
     a1<-sample(a,1)
     b1<-sample(b,1)
     int<-int+((a1-mean.a)*alpha.gt(a1,b1,omega,t))
@@ -64,6 +86,129 @@ beta.num<-function(a,b,omega,t){
   int<-int/10000
   return(int)
 }
+
+
+beta.tri<-function(a,b,slope,t){
+  mean.a<-mean(a)
+  int<-0
+  for(i in 1:100000){
+    a1<-sample(a,1)
+    b1<-sample(b,1)
+    int<-int+((a1-mean.a)*alpha.tri(a1,b1,slope,t))
+  }
+  int<-int/10000
+  return(int)
+}
+
+
+dat=NULL
+
+pars=expand.grid(s1=c(0.1,0.5,1,5,10),s2=c(0.1,0.5,1,5,10))
+
+for(i in 1:nrow(pars)){
+  
+  dat=bind_rows(dat,tibble(par1=pars[i,1],par2=pars[i,2],ind=i,vals=rbeta(1000,pars[i,1],pars[i,2])))
+  
+}
+
+dat%>%
+ggplot(aes(vals))+
+geom_density()+
+facet_wrap(vars(ind),scales="free")  
+
+
+#Scenario 1: Flat trait distributions 
+means=seq(-4,4,length.out=50)
+a=runif(1000,-1,1)
+
+res1=NULL
+
+for(i in 1:length(means)){
+  
+  b=runif(1000,means[i]-1,means[i]+1)
+  
+  res1=bind_rows(res1,tibble(mean=means[i],
+                       beta_gt=beta.gt(a,b,0.5,0.5),
+                       beta_tri=beta.tri(a,b,2,0.5)))
+  
+}
+
+
+
+#Scenario 2: Normally distributed traits
+
+means=seq(-4,4,length.out=50)
+a=rtruncnorm(1000,-5,5,0,1)
+
+res=NULL
+
+for(i in 1:length(means)){
+  
+  b=rtruncnorm(1000,-5,5,means[i],1)
+  
+  res=bind_rows(res,tibble(mean=means[i],
+                           beta_gt=beta.gt(a,b,0.5,0.5),
+                           beta_tri=beta.tri(a,b,2,0.5)))
+  
+}
+
+res%>%
+  ggplot()+
+  geom_line(aes(mean,beta_gt,col="red"))+
+  geom_line(aes(mean,beta_tri,col="green"))+
+  geom_hline(yintercept=0)+
+  geom_vline(xintercept=0)
+
+
+results=bind_rows(
+  res1%>%
+    pivot_longer(cols=beta_gt:beta_tri,names_to = "kernel",values_to = "beta")%>%
+    mutate(traits="flat"),
+  res%>%
+    pivot_longer(cols=beta_gt:beta_tri,names_to = "kernel",values_to = "beta")%>%
+    mutate(traits="normal"))
+
+results%>%
+  ggplot(aes(mean,beta,col=kernel))+
+  geom_line()+
+  geom_hline(yintercept=0)+
+  geom_vline(xintercept=0)+
+  facet_wrap(~traits)
+
+#plot beta function for normal trait distributions (truncated) and truncated Gaussian kernel
+m=seq(-5,5,length.out=200)
+sdval=1
+omega=1
+t=2
+
+int=0
+a=rtruncnorm(10^4,-5,5,m[i],sdval)
+b=rtruncnorm(10^4,-5,5,0,sdval)
+
+betas=NULL
+
+for (i in 1:length(m)){
+  
+  int=0
+  
+for (j in 1:length(a)){
+  
+  a1<-runif(1,-5,5)
+  b1<-runif(1,m[i]-2.5,m[i]+2.5)
+  int<-int+(a1*alpha.tri(a1,b1,t))  
+  
+  
+}
+  
+  betas=c(betas,int/length(a))
+  
+}
+
+
+plot(-betas~m,type="l")
+
+
+
 
 
 #plot beta function for different trait distribution shapes. Functions for trait distributions:
@@ -147,3 +292,17 @@ p1<-plot(bet1~b,type="l",axes=FALSE,ann=FALSE)
 tiff('beta_num.tiff', units="in", width=10, height=5, res=300)
 plot(bet1~b,type="l",axes=FALSE,ann=FALSE)
 dev.off()
+
+
+######################################################################
+# New analysis
+#Estimate the conditions under which species may exhibit convergent evolution
+#Represent this probability in terms of parameters of competition kernel, and trait 
+#distributions
+
+
+
+
+
+
+
