@@ -34,8 +34,8 @@ alpha.tri<-function(a,b,t){
 
 
 # Model parameters
-nsp<-20   #No. of species
-n<-20   # No. of loci
+nsp<-2   #No. of species
+n<-2   # No. of loci
 geno<-seq(-5,5,l=2*n+1) #Vector of genotypes
 nt<-length(geno)   # No. of genotypes
 omega<-2
