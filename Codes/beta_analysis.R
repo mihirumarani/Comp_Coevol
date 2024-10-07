@@ -476,6 +476,27 @@ dat%>%
   geom_point()+
   geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
 
+dat%>%
+  group_by(traits,time)%>%
+  summarize(means=mean(mnnd),
+            sd=sd(mnnd))%>%
+  ungroup()%>%
+  mutate(traits=as.factor(traits))%>%
+  ggplot(aes(x=time,y=means,col=traits,fill=traits))+
+  geom_line()+
+  geom_point()+
+  geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
+
+dat%>%
+  group_by(K1s,time)%>%
+  summarize(means=mean(mnnd),
+            sd=sd(mnnd))%>%
+  ungroup()%>%
+  mutate(K1s=as.factor(K1s))%>%
+  ggplot(aes(x=time,y=means,col=K1s,fill=K1s))+
+  geom_line()+
+  geom_point()+
+  geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
 
 ###############################################################################
 #OLD CODE
