@@ -34,8 +34,8 @@ alpha.tri<-function(a,b,t){
 
 
 # Model parameters
-nsp<-2   #No. of species
-n<-2   # No. of loci
+nsp<-20   #No. of species
+n<-5   # No. of loci
 geno<-seq(-5,5,l=2*n+1) #Vector of genotypes
 nt<-length(geno)   # No. of genotypes
 omega<-2
@@ -104,11 +104,16 @@ Npop<-matrix(nrow=nsp)
 
 
 #Timepoints to record
-samples<-ceiling(c(seq(1,100,length.out=10),seq(500,9999,length.out=20)))
 
 Ngen<-N0
 
 Np<-Ngen*N.ini
+
+#plot of initial trait distributions
+plot(Np[1,]~geno,type="l",ylim=c(0,1000))
+for(i in 2:nsp){
+  lines(Np[i,]~geno,col=i)
+}
 
 for(m in 1:10000){
   

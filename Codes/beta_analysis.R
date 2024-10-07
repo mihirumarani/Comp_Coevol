@@ -1,6 +1,8 @@
 #Functions
 library(truncnorm)
 library(tidyverse)
+library(patchwork)
+
 
 theme_set(theme_bw())
 theme_update(panel.grid = element_blank(),
@@ -20,6 +22,464 @@ cbpalette <-
   )
 
 
+#Functions for competitive kernels
+alpha_gt=function(x,y,omega,t){
+  
+  al=0
+  if(abs(x-y)<t){
+    
+    al=exp(-((x-y)^2)/(omega^2))
+  }
+  
+  return(al)
+}
+
+
+alpha_tri=function(x,y,slope,t){
+  
+  al=0
+  if(abs(x-y)<t){
+    
+    al=1-(slope*abs(x-y))
+  }
+  
+  return(max(0,al))
+  
+}
+
+#function to get the probability of a getting a phenotype under SK model
+qgprob=function(n){
+  
+  haplR <- array(0, dim=rep(n+1,3))
+  for(i in 0:n) for(j in 0:i) for(k in 0:min(n,(i+j))){ 
+    haplR[1+i,1+j,1+k] <- sum(dhyper(max(0, i+j-n):min(i, j), i, n-i, j) *
+                                dbinom(k-(max(0, i+j-n):min(i,j)), i+j -
+                                         2*(max(0, i+j-n):min(i, j)), prob=0.5))
+  }
+  for (k in 0:n) {
+    haplR[,,1+k] <- haplR[,,1+k] + t(haplR[,,1+k])
+    diag(haplR[,,1+k]) <- diag(haplR[,,1+k])/2
+  }
+  indexsum.haplR <- matrix(0, 2*n+1, 2*n+1)
+  for(k in 0:n){
+    for(i in 0:n) indexsum.haplR[1+i,1+k] <- haplR[1+i,1,1+k]
+    for(j in 0:n) indexsum.haplR[1+j+n,1+k] <- haplR[1+n,1+j,1+k]
+  }
+  
+  R <- array(dim=rep(1+2*n, 3))
+  for (i in 0:(2*n)) for (j in 0:(2*n)) for (q in 0:(2*n)) {
+    R[1+i,1+j,1+q] <- sum(indexsum.haplR[1+i,1+(0:q)] *
+                            indexsum.haplR[1+j,1+q-(0:q)])
+  }
+  
+  
+  return(R)
+  
+  
+}
+
+
+single_sim1=function(time,r,K1,K2,a1,A,R,Ng0,Npop){
+  
+  Np0=Ng0*Npop
+  Ngen=Ng0
+  Np=Np0
+  
+  nsp=nrow(Ng0)
+  nt=ncol(Ng0)
+  
+  dat=array(dim=c(time+1,nsp,nt))
+  
+  dat[1,,]=Np
+  
+  #Start the simulation
+  for(m in 2:(time+1)){
+  
+    #Determine the extinct species
+    Np[which(rowSums(Np) < 10 ),]=0
+    Ngen[which(rowSums(Np)==0),]=0
+    
+    if(all(rowSums(Np)==0)){
+      break
+    }else{
+      
+      newgen=matrix(0,nsp,nt)
+      Np1=newgen
+      
+      #Reproduction
+      for(i in which(rowSums(Ngen)!=0)){
+        
+        probs=Ngen[i,]%*%t(Ngen[i,])
+        
+        for(j in 1:nt){
+          
+          newgen[i,j]=sum(probs*R[,,j])
+        }
+      }
+      
+      newp=newgen*rowSums(Np)
+      
+      #Selection
+      
+      if(nrow(A)>1){
+        
+        for(i1 in 1:nrow(newp)){
+          
+          #Intraspecific density dependence: Logistic
+          rdash=r[i1]*(1-(sum(newp[i1,])/K2))
+          
+          #Interspecific comp: Lotka-Volterra
+          
+          for(i2 in 1:nt){
+            
+            comps=a1*sum(A[i2,]%*%t(newp[-i1,]))
+            
+            Np[i1,i2]= newp[i1,i2]+ (newp[i1,i2]*rdash*(1-(comps/K1)))
+            
+          }
+          
+        }
+        
+        Np[which(Np < 1)]=0
+        Ngen=Np/rowSums(Np)
+        Ngen[is.nan(Ngen)]=0
+      }
+      
+    }
+    
+    dat[m,,]=Np
+        
+  }
+  
+  return(dat)
+
+}
+
+getsum=function(dat){
+  
+  pars=dim(dat)
+  
+  pops=matrix(0,pars[1],pars[2])
+  trmeans=pops
+  
+  for(i in 1:pars[2]){
+    for(j in 1:pars[1]){
+    
+    pops[j,i]=sum(dat[j,i,])
+    trmeans[j,i]=sum(res[j,i,]*geno)/sum(res[j,i,])
+    }
+  }
+  
+  l=list()
+  
+  l[[1]]=pops
+  l[[2]]=trmeans
+  
+  return(l)
+  
+  
+}
+
+################################################################################ 
+#Plot beta values as functions of competition kernels and trait distributions
+################################################################################ 
+
+n=10
+geno=seq(-1,1,length.out=2*n+1)
+
+nt=length(geno)
+
+#Parameters
+omega=1
+slope=0.75
+t=1
+a1=0.25
+
+#Set the mean trait values for spp no. 2
+means=seq(-1.15,1.15,0.005)
+
+
+#Pre-calculate coefficients of competitoin between pairs of phenotypes
+
+Ag=matrix(0,nt,nt)
+At=Ag
+
+for(i1 in 1:nt){
+  for(i2 in 1:nt){
+    
+    Ag[i1,i2]=alpha_gt(geno[i1],geno[i2],omega,t)
+    At[i1,i2]=alpha_tri(geno[i1],geno[i2],slope,t)
+    
+  }
+}
+
+
+#Case 1: Uniformly distributed traits + truncated gaussian comp. kernel
+
+#Assign probabilities for all phenotypes of spp 1 and assume that mean trait value
+#for sp 1 is zero.
+
+N1=dunif(geno,-0.2,0.2)
+N1=N1/sum(N1)
+
+betas1=vector(length=length(means))
+
+for(i in 1:length(means)){
+  
+  #Create a trait distribution around the mean trait value for spp. 2
+  N2=dunif(geno,means[i]-0.2,means[i]+0.2)
+  
+  N2=N2/sum(N2)
+  
+  N1n=vapply(1:length(N1), function(x) sum(Ag[x,]*N2) , 1)
+  
+  newfreq=N1*(1-N1n)
+  
+  newfreq= newfreq/sum(newfreq)
+  
+  betas1[i]=sum(newfreq*geno)
+  
+}
+
+
+
+#Case 2: Uniformly distributed traits + triangular comp. kernel
+
+N1=dunif(geno,-0.2,0.2)
+N1=N1/sum(N1)
+
+betas2=vector(length=length(means))
+
+for(i in 1:length(means)){
+  
+  #Create a trait distribution around the mean trait value for spp. 2
+  N2=dunif(geno,means[i]-0.2,means[i]+0.2)
+  
+  N2=N2/sum(N2)
+  
+  N1n=vapply(1:length(N1), function(x) sum(At[x,]*N2) , 1)
+  
+  newfreq=N1*(1-N1n)
+  
+  newfreq= newfreq/sum(newfreq)
+  
+  betas2[i]=sum(newfreq*geno)
+  
+}
+
+
+#Case 3: Gaussian distributed traits + truncated gaussian comp. kernel
+
+N1=dtruncnorm(geno,-1,1,mean=0,sd=0.2)
+N1=N1/sum(N1)
+
+betas3=vector(length=length(means))
+
+for(i in 1:length(means)){
+  
+  #Create a trait distribution around the mean trait value for spp. 2
+  N2=dtruncnorm(geno,-1,1,mean=means[i],sd=0.2)
+  
+  N2=N2/sum(N2)
+  
+  N1n=vapply(1:length(N1), function(x) sum(Ag[x,]*N2) , 1)
+  
+  newfreq=N1*(1-N1n)
+  
+  newfreq= newfreq/sum(newfreq)
+  
+  betas3[i]=sum(newfreq*geno)
+  
+}
+
+
+#Case 4: Gaussian distributed traits + triangular comp. kernel
+N1=dtruncnorm(geno,-1,1,mean=0,sd=0.2)
+N1=N1/sum(N1)
+
+betas4=vector(length=length(means))
+
+for(i in 1:length(means)){
+  
+  #Create a trait distribution around the mean trait value for spp. 2
+  N2=dtruncnorm(geno,-1,1,mean=means[i],sd=0.2)
+  
+  N2=N2/sum(N2)
+  
+  N1n=vapply(1:length(N1), function(x) sum(At[x,]*N2) , 1)
+  
+  newfreq=N1*(1-N1n)
+  
+  newfreq= newfreq/sum(newfreq)
+  
+  betas4[i]=sum(newfreq*geno)
+  
+}
+
+res=data.frame(mean=means,beta1=betas1,beta2=betas2,
+               beta3=betas4,beta4=betas4)
+
+p1=res%>%ggplot(aes(x=means,y=beta1))+
+  geom_line()+
+  ggtitle("Uniform distribution + Gaussian Kernel")
+
+p2=res%>%ggplot(aes(x=means,y=beta2))+
+  geom_line()+
+  ggtitle("Uniform distribution + Triangular Kernel")
+
+p3=res%>%ggplot(aes(x=means,y=beta3))+
+  geom_line()+
+  ggtitle("Gaussian distribution + Gaussian Kernel")
+
+p4=res%>%ggplot(aes(x=means,y=beta4))+
+  geom_line()+
+  ggtitle("Gaussian distribution + Triangular Kernel")
+
+
+(p1|p2)/(p3|p4)
+
+
+
+
+#############################################################################
+##Long term simulations for multispecies competition
+#############################################################################
+#Sample initial conditions and param values
+
+nsp=10
+n=5
+
+#Traits range between -1 and 1
+geno=seq(-1,1,length.out=(2*n+1))
+
+nt=length(geno)
+
+#Params
+#kernel related
+omega=1
+slope=0.7
+t=1.0
+a1=0.25
+
+#Demography related
+r=abs(runif(nsp,0.2,0.3))
+
+K1=1500000
+K2=1500
+
+
+#pre-calculate coefficients of competition between pairs of phenotypes
+
+Ag=matrix(0,nt,nt)
+At=Ag
+
+for(i1 in 1:nt){
+  for(i2 in 1:nt){
+    Ag[i1,i2]=alpha_gt(geno[i1],geno[i2],omega,t)
+    At[i1,i2]=alpha_tri(geno[i1],geno[i2],slope,t)
+  }
+}
+
+R=qgprob(n)
+
+#Starting population
+randm=runif(nsp,-0.6,0.6)
+
+N_uni=matrix(0,nsp,nt)
+
+N_gau=N_uni
+
+for(i in 1:nsp){
+  
+  N_uni[i,]=dunif(geno,randm[i]-0.4,randm[i]+0.4)
+  
+  N_gau[i,]=dtruncnorm(geno,-1,1,randm[i],0.3)
+  
+}
+
+N_uni=N_uni/rowSums(N_uni)
+N_gau=N_gau/rowSums(N_gau)
+
+
+#Case 1: Uniformly distributed traits + truncated gaussian comp. kernel
+
+res=single_sim1(5000,r,K2,K2,a1,Ag,R,N_uni,1000)
+dat=getsum(res)
+
+pops=dat[[1]]%>%as_tibble()
+
+names(pops)=as.character(seq(nsp))
+  
+pplot=pops%>%
+  mutate(time=1:n())%>%
+  pivot_longer(1:nsp,names_to = "species",values_to = "N")%>%
+  ggplot(aes(x=time,y=N,col=species))+
+  geom_line()
+
+
+trmeans=dat[[2]]%>%as_tibble()
+names(trmeans)=as.character(seq(nsp))
+
+tplot=trmeans%>%
+  mutate(time=1:n())%>%
+  pivot_longer(1:nsp,names_to = "species",values_to = "trait")%>%
+  ggplot(aes(x=time,y=trait,col=species))+
+  geom_line()
+
+pplot|tplot
+
+
+
+########################################################################
+#Data analysis
+#Load files
+
+
+
+path1="C:/Users/mihir/Documents/Comp_Coevol/Codes"
+
+
+
+files=list.files(path1)[grep("compdat",list.files(path1))]
+
+dat=tibble()
+
+for(i in 1:length(files)){
+  
+  dat=dat%>%
+      bind_rows(
+        read.csv(paste0(path1,"/",files[1]))
+      )
+  
+}
+
+#Variables- nloci,a1s,K1s,kernel,traits
+
+dat%>%
+  group_by(kernel,time)%>%
+  summarize(means=mean(mnnd),
+            sd=sd(mnnd))%>%
+  ungroup()%>%
+  ggplot(aes(x=time,y=means,col=kernel,fill=kernel))+
+  geom_line()+
+  geom_point()+
+  geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
+
+dat%>%
+  group_by(a1s,time)%>%
+  summarize(means=mean(mnnd),
+            sd=sd(mnnd))%>%
+  ungroup()%>%
+  mutate(a1s=as.factor(a1s))%>%
+  ggplot(aes(x=time,y=means,col=a1s,fill=a1s))+
+  geom_line()+
+  geom_point()+
+  geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
+
+
+###############################################################################
+#OLD CODE
+###############################################################################
 #Error function
 erfun<-function(x){
   return(2 * pnorm(x * sqrt(2)) - 1)
