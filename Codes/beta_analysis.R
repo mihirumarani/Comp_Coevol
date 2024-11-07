@@ -455,7 +455,7 @@ for(i in 1:length(files)){
 
 #Variables- nloci,a1s,K1s,kernel,traits
 
-dat%>%
+fig1=dat%>%
   group_by(kernel,time)%>%
   summarize(means=mean(mnnd),
             sd=sd(mnnd))%>%
@@ -465,7 +465,11 @@ dat%>%
   geom_point()+
   geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
 
-dat%>%
+pdf("Fig1.pdf",width = 5.91, height =3.84 , pointsize = 18, useDingbats=FALSE)
+fig1
+dev.off()
+
+fig2=dat%>%
   group_by(a1s,time)%>%
   summarize(means=mean(mnnd),
             sd=sd(mnnd))%>%
@@ -476,7 +480,11 @@ dat%>%
   geom_point()+
   geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
 
-dat%>%
+pdf("Fig2.pdf",width = 5.91, height =3.84 , pointsize = 18, useDingbats=FALSE)
+fig2
+dev.off()
+
+fig3=dat%>%
   group_by(traits,time)%>%
   summarize(means=mean(mnnd),
             sd=sd(mnnd))%>%
@@ -487,7 +495,11 @@ dat%>%
   geom_point()+
   geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
 
-dat%>%
+pdf("Fig3.pdf",width = 5.91, height =3.84 , pointsize = 18, useDingbats=FALSE)
+fig3
+dev.off()
+
+fig4=dat%>%
   group_by(K1s,time)%>%
   summarize(means=mean(mnnd),
             sd=sd(mnnd))%>%
@@ -497,6 +509,10 @@ dat%>%
   geom_line()+
   geom_point()+
   geom_ribbon(aes(ymin=means-sd,ymax=means+sd),alpha=0.2)
+
+pdf("Fig4.pdf",width = 5.91, height =3.84 , pointsize = 18, useDingbats=FALSE)
+fig4
+dev.off()
 
 ###############################################################################
 #OLD CODE
