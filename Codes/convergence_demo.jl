@@ -108,13 +108,16 @@ And then, I will plot the evolutionary outcomes between spp. A and B as a functi
 # ╔═╡ 7bae4340-c3f8-4414-b409-9286b69f20f4
 begin
 
+	###Create a mega dataset of results of 3 spp competition.
+
 	ns=[3,4,5,7,10,15,20]
 	ks=["Gaussian", "Triangular","Quartic with peak"]
 	tds=["Gaussian","Uniform"]
+	t2s=0.0:0.05:0.5
 
 	res4=DataFrame()
 	
-	for i in ns, j in ks, k in tds
+	for i in ns, j in ks, k in tds, k1 in t2s
 		
 		geno1=collect(range(-1.0,stop=1.0,length=2*i+1))
     	nt1=length(geno1)
@@ -139,7 +142,7 @@ begin
 
 		for l in m3s
 
-			trmeans=[0.0,t2,l]
+			trmeans=[0.0,k1,l]
 	
 	    	Ns=zeros(Float64,length(trmeans),nt1)
 	        
@@ -164,90 +167,22 @@ begin
 
 	    	end
 
-			append!(res4,DataFrame(loci=i,kernel=j,td=k,t3=l,diff=diff(newmeans)[1]))
+			append!(res4,DataFrame(loci=i,kernel=j,td=k,t2=k1,t3=l,diff=diff(newmeans)[1]))
 
 		end
 	end
 
-	p31=plot(title="Gaussian kernel + Gaussian traits",titlefont = font(8,"Computer Modern"),xlab="Mean trait of invader species",ylab="Divergence between sp. 1 and 2", guidefont = font(6))
-	ylims!(-0.1,0.25)
-
-	for i in 1:length(ns)
-	    
-	    dat=res4[res4.kernel .=="Gaussian" .&& res4.td .=="Gaussian" .&& res4.loci 			.== ns[i],:]
-	    
-	    plot!(dat.t3,dat.diff,label=string(ns[i]," loci"))
-	    hline!([0],linestyle=:dash,label=false)
 	
-	end
-	      
-	p32=plot(title="Gaussian kernel + Uniform traits",titlefont = font(8,"Computer Modern"), xlab="Mean trait of invader species",ylab="Divergence between sp. 1 and 2", guidefont = font(6))
-	ylims!(-0.1,0.25)
-	
-	for i in 1:length(ns)
-	    
-	    dat=res4[res4.kernel .=="Gaussian" .&& res4.td .=="Uniform" .&& res4.loci 				.==ns[i],:]
-	    
-	    plot!(dat.t3,dat.diff,label=string(ns[i]," loci"))
-	    hline!([0],linestyle=:dash,label=false)
-	
-	end 
-	    
-	    
-	p33=plot(title="Triangle kernel + Gaussian traits",titlefont = font(8,"Computer Modern"),xlab="Mean trait of invader species",ylab="Divergence between sp. 1 and 2", guidefont = font(6))
-	ylims!(-0.1,0.25)
-	
-	for i in 1:length(ns)
-	    
-	    dat=res4[res4.kernel .=="Triangular" .&& res4.td .=="Gaussian" .&& 					res4.loci .== ns[i],:]
-	    
-	    plot!(dat.t3,dat.diff,label=string(ns[i]," loci"))
-	    hline!([0],linestyle=:dash,label=false)
-	
-	end   
-	
-	p34=plot(title="Triangle kernel + Uniform traits",titlefont = font(8,"Computer Modern"), xlab="Mean trait of invader species",ylab="Divergence between sp. 1 and 2", guidefont = font(6))
-	ylims!(-0.1,0.25)
-	
-	for i in 1:length(ns)
-	    
-	    dat=res4[res4.kernel .=="Triangular" .&& res4.td .=="Uniform" .&& 					res4.loci .== ns[i],:]
-	    
-	    plot!(dat.t3,dat.diff,label=string(ns[i]," loci"))
-	    hline!([0],linestyle=:dash,label=false)
-	
-	end 
-
-	p35=plot(title="Quartic kernel + Gaussian traits",titlefont = font(8,"Computer Modern"), xlab="Mean trait of invader species",ylab="Divergence between sp. 1 and 2", guidefont = font(6))
-	ylims!(-0.1,0.25)
-	
-	for i in 1:length(ns)
-	    
-	    dat=res4[res4.kernel .=="Quartic with peak" .&& res4.td .=="Gaussian" .&& 					res4.loci .== ns[i],:]
-	    
-	    plot!(dat.t3,dat.diff,label=string(ns[i]," loci"))
-	    hline!([0],linestyle=:dash,label=false)
-	
-	end 
-
-	p36=plot(title="Quartic kernel + Uniform traits",titlefont = font(8,"Computer Modern"), xlab="Mean trait of invader species",ylab="Divergence between sp. 1 and 2", guidefont = font(6))
-	ylims!(-0.1,0.25)
-	
-	for i in 1:length(ns)
-	    
-	    dat=res4[res4.kernel .=="Quartic with peak" .&& res4.td .=="Uniform" .&& 					res4.loci .== ns[i],:]
-	    
-	    plot!(dat.t3,dat.diff,label=string(ns[i]," loci"))
-	    hline!([0],linestyle=:dash,label=false)
-	
-	end
-
-	plot(p31,p32,p33,p34,p35,p36, layout=(3,2), legend=true)
 	
 end
 
 
 
+
+# ╔═╡ 73e476ac-0481-4d26-be3f-e715cf24811c
+md"""
+![sp3plot1](https://drive.google.com/file/d/1gElHfjyImoJfcnT-LFDSllpcQ9Q_eRHd/view?usp=drive_link)
+"""
 
 # ╔═╡ ed127eae-f2d7-49c0-b1b3-5ca44f314968
 md"""
@@ -311,11 +246,6 @@ The above figure shows an effect of competition on competing individuals. Let's 
 For this we need to consider how the trait values are distributed across the population of species.
 
 First, the plausible number of phenotypes are determined by the number of biallelic (we assume) loci that determine the trait.
-"""
-
-# ╔═╡ 1ca55375-9d58-4287-bf7e-1ee68f3c0043
-md"""
-Number of loci: $loci
 """
 
 # ╔═╡ 5b31eb6b-15df-4522-ae16-cffb9fe7b92a
@@ -423,11 +353,7 @@ begin
 			
 	end
 
-	plot(t3s,res3,labels=false,xlab="Mean trait of invader",ylab="Change in trait difference of A and B")
-	ylims!(-0.5,0.5)
-	hline!([0.0],labels=false,color=:black)
-	vline!([0.0],labels="Spp. A")
-	vline!([t2],labels="Spp. B")
+	
 
 end
 
@@ -2008,11 +1934,12 @@ version = "1.4.1+1"
 # ╟─1b3854c0-990f-4ea6-8fe0-f2fb9ec5eedc
 # ╟─c565edba-e4cc-4b76-b50a-7ae4e1cc6de2
 # ╟─bcb160ce-22eb-4e82-9121-c770b438819c
-# ╠═3dd274e5-9e20-4359-92c2-096d3a81217d
+# ╟─3dd274e5-9e20-4359-92c2-096d3a81217d
 # ╟─c9789aa1-868b-4102-962a-e6a9a8c7520d
 # ╟─02a9d0e7-bb99-49cd-ab57-ce5bc59003f7
 # ╟─2b2f75b3-88e2-494a-be10-7c2bd65187dd
-# ╠═7bae4340-c3f8-4414-b409-9286b69f20f4
+# ╟─7bae4340-c3f8-4414-b409-9286b69f20f4
+# ╠═73e476ac-0481-4d26-be3f-e715cf24811c
 # ╟─ed127eae-f2d7-49c0-b1b3-5ca44f314968
 # ╟─34f9494a-f4a6-46e2-9c87-408e544f1ced
 # ╟─7a00a29e-8673-4133-bfb9-5d50f2992737
@@ -2025,7 +1952,6 @@ version = "1.4.1+1"
 # ╟─039150d7-59b2-4e75-90fd-a74857382279
 # ╟─0a292fd5-6b57-42b9-8c84-6b8fd1447478
 # ╟─fa71ad59-75ed-410c-99a9-9defaa1bc6b0
-# ╠═1ca55375-9d58-4287-bf7e-1ee68f3c0043
 # ╟─5b31eb6b-15df-4522-ae16-cffb9fe7b92a
 # ╟─2c29a41a-1209-4c35-97d4-9ca4b89b6bd9
 # ╟─ea9b52af-adad-4d0c-8829-ca88b6493b77
