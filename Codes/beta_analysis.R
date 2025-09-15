@@ -2,6 +2,7 @@
 library(truncnorm)
 library(tidyverse)
 library(patchwork)
+library(plotly)
 
 
 theme_set(theme_bw())
@@ -21,7 +22,751 @@ cbpalette <-
     "#4F2CAA"
   )
 
+mnnd<-function(a){
+  a<-na.omit(a)
+  if(length(a)>1 & length(unique(a)>1)){
+    a<-a[order(a,decreasing=TRUE)]
+    nnd<-c(length=length(a))
+    nnd[1]<-a[1]-a[2]
+    nnd[length(a)]<-a[length(a)-1]-a[length(a)]
+    for(i in 2:(length(a)-1)){
+      nnd[i]<-min((a[i-1]-a[i]),(a[i]-a[i+1]))
+    }
+    ranges<-a[1]-a[length(a)]
+    mnnd<-sum(nnd)/length(nnd)
+    mmax<-(ranges/(length(a)-1))
+    return(mnnd/mmax)
+  }
+  else{return(NA)}
+}
 
+#################################
+#Analyse 3 species convergence test
+####################################
+#directory:"C:/Users/mihir/Documents/Comp_Coevol/"
+
+loc="C:/Users/mihir/Documents/Comp_Coevol/"
+dat=read.csv(paste0(loc,"3sp_test6.csv"))%>%as_tibble()
+#dat2=read.csv(paste0(loc,"3sp_test5.csv"))%>%as_tibble()
+
+#dat=dat1%>%bind_rows(dat2)
+# Columns 'sp1', 'sp2' and 'sp3' show the initial trait values of 3 species.
+# Column "diff1 and diff2" show the total divergence between two species pairs (1-2 and 2-3) at 
+#the end of the simulation. (traits of species are ordered to begin with
+#sp1 has the lowest trait value)
+
+#Do the convergence events differ systematically with model parameters?
+
+p11=dat%>%
+    mutate(tr=-sp1/sp3)%>%
+    filter(dist=="Gaussian")%>%
+    mutate(loci=as.factor(loci))%>%
+    ggplot(aes(tr,diff1,col=loci))+
+    geom_line()+
+    facet_grid(omega~t,labeller=label_both)+
+    geom_hline(yintercept=0)+
+    ggtitle("Gaussian traits")+
+    labs(x="Ratio of gaps between sp. pairs",
+         y="Trait divergence between sp 1 and 2")
+
+p12=dat%>%
+  mutate(tr=-sp1/sp3)%>%
+  filter(dist=="Gaussian")%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(tr,diff1,col=loci))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_hline(yintercept=0)+
+  ggtitle("Uniform traits")+
+  labs(x="Ratio of gaps between sp. pairs",
+       y="Trait divergence between sp 1 and 2")
+
+p11|p12
+
+
+#Figure captions:
+#  Trait divergence between pairs of species vs. the ratio of gaps between two species pairs.
+#   (sp2-sp1)/(sp3-sp2). Lower value of x-axis indicates that the spp. 1 and 2 are much closer
+#   while sp. 3 is farther on trait axis.Higher x-axis value indicates vice-versa. Y axis values
+#   below zero indicate convergence.
+
+
+
+#Draw a heatmap
+h11=dat%>%
+  drop_na()%>%
+  group_by(loci,dist,omega,t)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1),
+            conv2=sum(diff2)/length(diff2))%>%
+  ungroup()%>%
+  ggplot(aes(omega,t,fill=conv1))+
+  geom_tile()+
+  facet_grid(loci~dist)+
+  scale_fill_gradientn(colours=c("white","red"),
+                       values=c(0,1))
+
+h12=dat%>%
+  drop_na()%>%
+  group_by(loci,dist,omega,t)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1),
+            conv2=sum(diff2)/length(diff2))%>%
+  ungroup()%>%
+  ggplot(aes(omega,t,fill=conv2))+
+  geom_tile()+
+  facet_grid(loci~dist)+
+  scale_fill_gradientn(colours=c("white","red"),
+                       values=c(0,1))
+
+
+
+#Do convergent events depend on the how the species are located on trait axis?
+sp1dat1=dat%>%
+  group_by(sp1,loci,dist,omega,t)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1))%>%
+  ungroup()%>%
+  filter(dist=="Gaussian")%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(sp1,conv1,col=loci))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_hline(yintercept=0)+
+  ggtitle("Gaussian traits")+
+  labs(x="Species 1 trait",
+       y="Convergence probability for sp1 and sp2")
+
+sp1dat2=dat%>%
+  group_by(sp1,loci,dist,omega,t)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1))%>%
+  ungroup()%>%
+  filter(dist=="Uniform")%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(sp1,conv1,col=loci))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_hline(yintercept=0)+
+  ggtitle("Uniform traits")+
+  labs(x="Species 1 trait",
+       y="Convergence probability for sp1 and sp2")
+
+sp1dat1|sp1dat2
+
+
+sp3dat1=dat%>%
+  group_by(sp3,loci,dist,omega,t)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1))%>%
+  ungroup()%>%
+  filter(dist=="Gaussian")%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(sp3,conv1,col=loci))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_hline(yintercept=0)+
+  ggtitle("Gaussian traits")+
+  labs(x="Species 3 trait",
+       y="Convergence probability for sp1 and sp2")
+
+sp3dat2=dat%>%
+  group_by(sp3,loci,dist,omega,t)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1))%>%
+  ungroup()%>%
+  filter(dist=="Uniform")%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(sp3,conv1,col=loci))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_hline(yintercept=0)+
+  ggtitle("Uniform traits")+
+  labs(x="Species 3 trait",
+       y="Convergence probability for sp1 and sp2")
+
+sp3dat1|sp3dat2
+
+
+spgap1=dat%>%
+  group_by(sp1,sp3,dist)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1),
+            conv2=sum(diff2<0)/length(diff2))%>%
+  ungroup()%>%
+  mutate(sp1=-sp1)%>%
+  mutate(sp1=as.factor(sp1),
+         sp3=as.factor(sp3))%>%
+  ggplot(aes(sp1,sp3,fill=conv1))+
+  geom_tile()+
+  facet_wrap(vars(dist))+
+  scale_fill_gradientn(colours=c("white","red"),
+                       values=c(0,1))+
+  labs(x="species 1 trait",
+       y="species 3 trait")
+
+
+spgap2=dat%>%
+  group_by(sp1,sp3,dist)%>%
+  summarize(conv1=sum(diff1<0)/length(diff1),
+            conv2=sum(diff2<0)/length(diff2))%>%
+  ungroup()%>%
+  mutate(sp1=-sp1)%>%
+  mutate(sp1=as.factor(sp1),
+         sp3=as.factor(sp3))%>%
+  ggplot(aes(sp1,sp3,fill=conv2))+
+  geom_tile()+
+  facet_wrap(vars(dist))+
+  scale_fill_gradientn(colours=c("white","red"),
+                       values=c(0,1))
+
+
+#Convergence likelihoods are similar for Gaussian vs. uniformly distributed traits!
+
+###################################################################
+#Plot 20 sp simulation results
+#####################################################################
+
+loc2="C:/Users/mihir/Documents/Comp_Coevol/data/"
+
+#Do not use this chunk if the file "20spconv.rds" is not already
+#created.
+###############################################################
+filelist=list.files(loc2)
+df1=read.csv(paste0(loc2,"10loci.csv"))%>%
+  as_tibble()%>%
+  mutate(loci=10)
+
+df2=read.csv(paste0(loc2,"10loci.csv"))%>%
+  as_tibble()%>%
+  mutate(loci=5)
+
+dat=df1%>%bind_rows(df2)
+
+
+#############################
+#Find proportions of pairs of species converging 
+##################################################
+
+pars=dat%>%count(loci,dist,a,omega,t,rep)%>%as.data.frame()
+
+convdat=tibble()
+
+for (i in 1:nrow(pars)){
+  
+  dat1=dat%>%
+    filter(loci==pars$loci[i],
+           dist==pars$dist[i],
+           a==pars$a[i],
+           omega==pars$omega[i],
+           t==pars$t[i],
+           rep==pars$rep[i])
+  
+  ord1=order(dat1%>%
+               filter(time==0)%>%
+               pull(trmean))
+  
+  cps=dat1%>%
+      group_by(time)%>%
+      slice(ord1)%>%
+      ungroup()%>%
+    group_by(time)%>%
+    reframe(td=diff(trmean))%>%
+    ungroup()%>%
+    group_by(time)%>%
+    mutate(sppair=1:length(td))%>%
+    ungroup()%>%
+    group_by(sppair)%>%
+    summarize(conv=sum(diff(td)<0))%>%
+    ungroup()%>%
+    summarize(sum(conv>0)/length(sppair))%>%pull()
+  
+  convdat=convdat%>%
+    bind_rows(tibble(
+      loci=pars$loci[i],
+      dist=pars$dist[i],
+      a=pars$a[i],
+      omega=pars$omega[i],
+      t=pars$t[i],
+      rep=pars$rep[i],
+      conv=cps
+    ))
+}
+
+c11=convdat%>%
+  filter(loci==5)%>%
+  group_by(dist,a,omega,t)%>%
+  summarize(mean=mean(conv),
+            sd=sd(conv))%>%
+  ungroup()%>%
+  ggplot(aes(a,mean,col=dist,fill=dist))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_ribbon(aes(ymin=mean-sd,
+                  ymax=mean+sd),
+              alpha=0.2)+
+  labs(x="Strength of interspecific competition",
+       y="Average convergences observed")+
+  ggtitle("5 loci")
+
+c12=convdat%>%
+  filter(loci==10)%>%
+  group_by(dist,a,omega,t)%>%
+  summarize(mean=mean(conv),
+            sd=sd(conv))%>%
+  ungroup()%>%
+  ggplot(aes(a,mean,col=dist,fill=dist))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_ribbon(aes(ymin=mean-sd,
+                  ymax=mean+sd),
+              alpha=0.2)+
+  labs(x="Strength of interspecific competition",
+       y="Average convergences observed")+
+  ggtitle("10 loci")
+
+c11|c12
+  
+
+c21=convdat%>%
+  filter(dist=="Gaussian")%>%
+  group_by(loci,dist,a,omega,t)%>%
+  summarize(mean=mean(conv),
+            sd=sd(conv))%>%
+  ungroup()%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(a,mean,col=loci,fill=loci))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_ribbon(aes(ymin=mean-sd,
+                  ymax=mean+sd),
+              alpha=0.2)+
+  labs(x="Strength of interspecific competition",
+       y="Average convergences observed")+
+  ggtitle("Gaussian traits")
+
+c22=convdat%>%
+  filter(dist=="Uniform")%>%
+  group_by(loci,dist,a,omega,t)%>%
+  summarize(mean=mean(conv),
+            sd=sd(conv))%>%
+  ungroup()%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(a,mean,col=loci,fill=loci))+
+  geom_line()+
+  facet_grid(omega~t,labeller=label_both)+
+  geom_ribbon(aes(ymin=mean-sd,
+                  ymax=mean+sd),
+              alpha=0.2)+
+  labs(x="Strength of interspecific competition",
+       y="Average convergences observed")+
+  ggtitle("Uniform traits")
+
+c21|c22
+
+
+############################################################
+#MNND values
+
+mnndat=dat%>%
+        group_by(loci,dist,a,omega,t,rep,time)%>%
+        summarize(mnnds=mnnd(trmean))%>%
+        ungroup()%>%
+        group_by(loci,dist,a,omega,t,time)%>%
+        summarize(mean=mean(mnnds),
+                  sd=sd(mnnds))%>%
+        ungroup()
+
+mnndat%>%
+  filter(dist=="Uniform",
+         a==1.0)%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(time,mean,col=loci,fill=loci))+
+  geom_line()+
+  geom_ribbon(aes(ymin=mean-sd,
+                  ymax=mean+sd),
+              alpha=0.2)+
+  facet_grid(omega~t,labeller=label_both)+
+  labs(x="Time",
+       y="Average MNND")
+      
+#Hard to incorporate all the parameters plus time trajectory
+#Heatmap of the final time value
+m1=mnndat%>%
+  filter(time==max(time),
+         loci==5)%>%
+  mutate(omega=as.factor(omega),
+         t=as.factor(t))%>%
+  ggplot(aes(omega,t,fill=mean))+
+  geom_tile()+
+  facet_grid(a~dist,labeller=label_both)+
+  scale_fill_gradient(low="white", high="red")+
+  ggtitle("5 loci")
+
+m2=mnndat%>%
+  filter(time==max(time),
+         loci==10)%>%
+  mutate(omega=as.factor(omega),
+         t=as.factor(t))%>%
+  ggplot(aes(omega,t,fill=mean))+
+  geom_tile()+
+  facet_grid(a~dist,labeller=label_both)+
+  scale_fill_gradient(low="white", high="red")+
+  ggtitle("Uniform Traits")
+
+m1|m2
+
+#############################################################
+
+dat=readRDS(paste0(loc2,"20spconv.rds"))
+
+#Plot sample trajectories
+dat%>%
+  filter(loci==5,
+          rep==1,
+         dist=="Uniform",
+         omega==0.1,
+         t==0.1)%>%
+  mutate(sp=as.factor(sp))%>%
+  ggplot(aes(time,trmean,col=sp))+
+  geom_line()+
+  facet_wrap(vars(a),labeller=label_both)+
+  theme(legend.position = "none")+
+  ylab("Trait means")
+
+#Plot %of sp pairs showing convergence
+
+diffdat=dat%>%
+  mutate(trmean1=ifelse(pop>0,trmean,NA))%>%
+  group_by(loci,dist,a,omega,t,rep,time)%>%
+  summarize(trdiff=diff(trmean1),diffid=1:length(trdiff))%>%
+  ungroup()%>%
+  group_by(loci,dist,a,omega,t,rep,diffid)%>%
+  summarize(diffevol=diff(trdiff),time1=1:length(diffevol))%>%
+  ungroup()%>%
+  mutate(diffevol=ifelse(abs(diffevol)<10^-5,0,diffevol))
+  
+plotdat=diffdat%>%
+  group_by(loci,dist,a,omega,t,time1,rep)%>%
+  summarize(conv=sum(diffevol<0)/length(diffevol))%>%
+  ungroup()%>%
+  group_by(loci,dist,a,omega,t,time1)%>%
+  summarize(meanconv=mean(conv),
+            sdconv=sd(conv))%>%
+  ungroup()
+
+plotdat%>%
+  filter(time1==1,
+         dist=="Uniform")%>%
+  mutate(a=as.factor(a))%>%
+  ggplot(aes(loci,meanconv,col=a,fill=a))+
+  geom_line()+
+  geom_ribbon(aes(ymin=meanconv-sdconv,ymax=meanconv+sdconv),alpha=0.2)+
+  facet_grid(omega~t,labeller=label_both)+
+  ylab("% species pairs converging")
+  
+mnnddat=dat%>%
+        filter(pop>0)%>%
+        group_by(loci,dist,a,omega,t,time,rep)%>%
+        summarize(mnnd1=mnnd(trmean))%>%
+        ungroup()
+
+mnnddat%>%
+  filter(time %in% c(0,1000))%>%
+  pivot_wider(names_from = time,values_from = mnnd1)%>%
+  rename(initial="0",
+         final="1000")%>%
+  mutate(conv=final-initial)%>%
+  mutate(a=as.factor(a))%>%
+  group_by(loci,dist,a,omega,t)%>%
+  summarize(meanc=mean(conv),
+            sdc=sd(conv))%>%
+  ungroup()%>%
+  filter(dist=="Uniform")%>%
+  ggplot(aes(loci,meanc,col=a,fill=a))+
+  geom_line()+
+  geom_hline(yintercept = 0)+
+  geom_ribbon(aes(ymin=meanc-sdc,ymax=meanc+sdc),alpha=0.2)+
+  facet_grid(omega~t)+
+  ylab("Increase in MNND from initial conditions")
+
+mnnddat%>%
+  filter(time==1000)%>%
+  mutate(a=as.factor(a))%>%
+  group_by(loci,dist,a,omega,t)%>%
+  summarize(meanm=mean(mnnd1),
+            sdm=sd(mnnd1))%>%
+  ungroup()%>% 
+  filter(dist=="Uniform")%>%
+  ggplot(aes(loci,meanm,col=a,fill=a))+
+  geom_line()+
+  #geom_ribbon(aes(ymin=meanm-sdm,ymax=meanm+sdm),alpha=0.2)+
+  facet_grid(omega~t,labeller=label_both)
+  
+# Heatmaps for the both the results above
+
+###########################################################
+# % convergent pairs across all time points
+diffdat%>%
+  group_by(loci,dist,a,omega,t,rep)%>%
+  summarize(conv=sum(diffevol<0)/length(diffevol))%>%
+  ungroup()%>%
+  group_by(loci,dist,a,omega,t)%>%
+  summarise(meanconv=mean(conv),
+            sdconv=sd(conv))%>%
+  ungroup()%>%
+  mutate(loci=as.factor(loci),
+         a=as.factor(a))%>%
+  filter(dist=="Uniform")%>%
+  ggplot(aes(loci,a,fill=meanconv))+
+  geom_tile(col="black")+
+  facet_grid(omega~t,labeller=label_both)+
+  scale_fill_gradient2(low="white",high="red")+
+  labs(x="No. of loci",y="Strength of interspecific competition",
+       fill= "% convergences")
+  
+# % convergent pairs during a specific time step
+plotdat%>%
+  filter(time1==1,
+         dist=="Uniform")%>%
+  mutate(loci=as.factor(loci),
+         a=as.factor(a))%>%
+  ggplot(aes(loci,a,fill=meanconv))+
+  geom_tile(col="black")+
+  facet_grid(omega~t,labeller=label_both)+
+  scale_fill_gradient2(low="white",high="red")+
+  labs(x="No. of loci",y="Strength of interspecific competition",
+       fill= "% convergences")
+  
+  
+mnnddat%>%
+  filter(time %in% c(0,1000))%>%
+  pivot_wider(names_from = time,values_from = mnnd1)%>%
+  rename(initial="0",
+         final="1000")%>%
+  mutate(conv=final-initial)%>%
+  mutate(a=as.factor(a))%>%
+  group_by(loci,dist,a,omega,t)%>%
+  summarize(meanc=mean(conv),
+            sdc=sd(conv))%>%
+  ungroup()%>%
+  filter(dist=="Uniform")%>%
+  mutate(loci=as.factor(loci),
+         a=as.factor(a))%>%
+  ggplot(aes(loci,a,fill=meanc))+
+  geom_tile()+
+  facet_grid(omega~t,labeller=label_both)+
+  scale_fill_gradient2(low="red",high="white")+
+  labs(x="No. of loci",y="Strength of interspecific competition",
+        fill="Mean change in MNND over time")
+  
+mnnddat%>%
+  filter(time==1000)%>%
+  mutate(a=as.factor(a))%>%
+  group_by(loci,dist,a,omega,t)%>%
+  summarize(meanm=mean(mnnd1),
+            sdm=sd(mnnd1))%>%
+  ungroup()%>% 
+  filter(dist=="Uniform")%>%
+  mutate(loci=as.factor(loci),
+         a=as.factor(a))%>%
+  ggplot(aes(loci,a,fill=meanm))+
+  geom_tile()+
+  facet_grid(omega~t,labeller=label_both)+
+  scale_fill_gradient2(low="red",high="blue")+
+  labs(x="No. of loci",y="Strength of interspecific competition",
+       fill="Mean final MNND")
+###################################################################    
+  
+# Plot sample trajectories
+dat%>%
+  filter(dist=="Gaussian" & a==0.0001 & omega==0.05 & t==1.0 & loci==3)%>%
+  mutate(sp=as.factor(sp))%>%
+  group_by(sp,time)%>%
+  summarize(mean=mean(trmean),
+            sd=sd(trmean))%>%
+  ungroup()%>%
+  ggplot(aes(time,mean,col=sp,fill=sp))+
+  geom_line()+
+  geom_ribbon(aes(ymax=mean+sd,ymin=mean-sd),alpha=0.2)
+
+#Plot summary data
+
+tmax=max(dat$time)
+
+popdat=dat%>%
+  group_by(loci,dist,a,omega,t,rep,time)%>%
+  summarize(nsps=sum(pop>0))%>%
+  ungroup()%>%
+  filter(nsps>0)%>%
+  group_by(loci,dist,a,omega,t,time)%>%
+  summarize(mean=mean(nsps),
+            sd=sd(nsps))%>%
+  ungroup()
+
+mndat1=dat%>%
+  group_by(loci,dist,a,omega,t,rep,time)%>%
+  summarize(mnnd=mnnd(trmean))%>%
+  ungroup()%>%
+  drop_na()
+
+mndat0=mndat%>%
+  filter(time==0)%>%
+  rename(mnnd0=mnnd)%>%
+  select(-time)
+
+mndat=mndat%>%
+  inner_join(mndat0)%>%
+  #mutate(mnnd=mnnd-mnnd0)%>%
+  group_by(loci,dist,a,omega,t,time)%>%
+  summarize(mean=mean(mnnd),
+            sd=sd(mnnd))%>%
+  ungroup()
+
+mndat1%>%
+  group_by(loci,a,dist,time)%>%
+  summarize(mean=mean(mnnd),
+            sd=sd(mnnd))%>%
+  ungroup()%>%
+  mutate(loci=as.factor(loci),
+         a=as.factor(a),
+         dist=as.factor(dist))%>%
+  ggplot(aes(time,mean,col=loci,fill=loci))+
+  geom_line()+
+  #geom_ribbon(aes(ymax=mean+sd,ymin=mean-sd),alpha=0.2)+
+  facet_grid(a~dist,labeller=label_both)
+
+mndat1%>%
+  group_by(loci,a,dist,time)%>%
+  summarize(mean=mean(mnnd),
+            sd=sd(mnnd))%>%
+  ungroup()%>%
+  mutate(loci=as.factor(loci),
+         a=as.factor(a),
+         dist=as.factor(dist))%>%
+  ggplot(aes(time,mean,col=a,fill=a))+
+  geom_line()+
+  #geom_ribbon(aes(ymax=mean+sd,ymin=mean-sd),alpha=0.2)+
+  facet_grid(loci~dist,labeller=label_both)
+
+  
+
+
+#plot sample trajectories
+popdat%>%
+  filter(dist=="Gaussian" & a==0.0001)%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(time,mean,col=loci,fill=loci))+
+  geom_line()+
+  geom_ribbon(aes(ymin=mean-sd,ymax=mean+sd),alpha=0.2)+
+  facet_grid(t~omega,labeller=label_both)+
+  ylab("No. of extant species")
+
+
+mndat%>%
+  filter(dist=="Gaussian" & a==0.0001)%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(time,mean,col=loci,fill=loci))+
+  geom_line()+
+  geom_ribbon(aes(ymin=mean-sd,ymax=mean+sd),alpha=0.2)+
+  facet_grid(omega~t,labeller=label_both)+
+  ylab("MNND")
+  
+
+p11=popdat%>%
+  filter(time==tmax & dist=="Gaussian")%>%
+  mutate(loci=as.factor(loci),
+         dist=as.factor(dist),
+         a=as.factor(a),
+         omega=as.factor(omega),
+         t=as.factor(t))%>%
+  ggplot(aes(omega,t,fill=mean))+
+  geom_tile()+
+  facet_grid(loci~a,labeller=label_both)+
+  scale_fill_viridis_b()+
+  labs(fill="Extant species")+
+  xlab("Kernel width")+
+  ylab("Competition threshold")+
+  ggtitle("Initial distributions: Gaussian")
+
+p12=popdat%>%
+  filter(time==tmax & dist=="Uniform")%>%
+  mutate(loci=as.factor(loci),
+         dist=as.factor(dist),
+         a=as.factor(a),
+         omega=as.factor(omega),
+         t=as.factor(t))%>%
+  ggplot(aes(omega,t,fill=mean))+
+  geom_tile()+
+  facet_grid(loci~a,labeller=label_both)+
+  scale_fill_viridis_b()+
+  labs(fill="Extant species")+
+  xlab("Kernel width")+
+  ylab("Competition threshold")+
+  ggtitle("Initial distributions: Uniform")
+
+
+p21=mndat%>%
+  filter(time==tmax & dist=="Gaussian")%>%
+  mutate(loci=as.factor(loci),
+         dist=as.factor(dist),
+         a=as.factor(a),
+         omega=as.factor(omega),
+         t=as.factor(t))%>%
+  ggplot(aes(omega,t,fill=mean))+
+  geom_tile()+
+  facet_grid(loci~a,labeller=label_both)+
+  #scale_fill_gradientn(colors=c("red","white","blue"),breaks=c(-1,0,1))+
+  scale_fill_viridis_c()+
+  labs(fill="Mean MNND")+
+  ggtitle("Initial distributions: Gaussian")+
+  xlab("Kernel width")+
+  ylab("Competition threshold")
+  
+  cbpalette=
+    c(
+      "#E69F00",
+      "#56B4E9",
+      "#009E73",
+      "#F0E442",
+      "#0072B2",
+      "#D55E00",
+      "#CC79A7",
+      "#C5E772",
+      "#4F2CAA"
+    )
+  
+
+p22=mndat%>%
+  filter(time==tmax & dist=="Uniform")%>%
+  mutate(loci=as.factor(loci),
+         dist=as.factor(dist),
+         a=as.factor(a),
+         omega=as.factor(omega),
+         t=as.factor(t))%>%
+  ggplot(aes(omega,t,fill=mean))+
+  geom_tile()+
+  facet_grid(loci~a,labeller=label_both)+
+  #scale_fill_gradientn(colors=c("red","white","blue"),breaks=c(-1,0,1))+
+  scale_fill_viridis_c()+
+  labs(fill="Mean MNND")+
+  ggtitle("Initial distributions: Uniform")+
+  xlab("Kernel width")+
+  ylab("Competition threshold")
+
+png("D:/Project files/comp_coevol/plots/20sp_heat_sp.png",width=80,height=40)
+p11|p12
+dev.off()
+
+png("D:/Project files/comp_coevol/plots/20sp_heat_mnnd.png")
+p21|p22
+dev.off()
+
+p11|p21
+p12|p22
+
+p21|p22
+
+p2=mndat%>%
+  filter(time==tmax,dist=="Uniform")%>%
+  ggplot(aes(omega,t,col=mean,fill=mean))+
+  geom_tile()+
+  facet_grid(loci~a)
+
+p1|p2
 #Functions for competitive kernels
 alpha_gt=function(x,y,omega,t){
   
