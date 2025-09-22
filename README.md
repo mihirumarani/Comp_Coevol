@@ -1,6 +1,8 @@
-# Competition-and-network-evolution
+# Eco-evolutionary dynamics reveal trait divergence-to-convergence trade-offs in multispecies competition networks
 
-Aim: To analyse how trait-mediated competitive interactions influence the trait evolutionary dynamic of multiple species. 
+
+### Research summary
+Aim: To analyse how trait-mediated competitive interactions influence trait convergnece and divergence in species-rich communities
 
 Simulation approach is taken to study the relative influence of competitive kernels, which describe the context and the functional form of competition between individuals with given traits and trait characteristics (how they vary within species and changes as a result of selection and reproduction). 
 
@@ -14,6 +16,10 @@ b) Shpak-Kondrashov limited loci model.
 
 Different parameters related to the competitive kernels (threshold and width of competition), Q.Gen. models (no. of loci) and  intraspecific competition (relative weight) are altered to see how they affect the population and the trait dynamic.
 
+### Simulation outputs
+* All simulation outputs are available at [Switchdrive](https://drive.switch.ch/index.php/s/UY9vYzOhl3xmsG3)
 
+### Working draft
+* Working draft is at [Overleaf]( https://www.overleaf.com/project/635bc91875ecdc5262bcbae3)
 
 
