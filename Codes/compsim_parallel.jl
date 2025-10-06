@@ -7,7 +7,7 @@ addprocs(11)
     using CSV, DataFrames, Random, LinearAlgebra, Distances, Distributions, SpecialFunctions
 
 
-    cd1="C:\\Users\\mihir\\Documents\\Comp_Coevol\\data"
+    cd1="D:\\Project_files\\comp_coevol\\data\\20sp\\"
 
     #Load functions
     function alpha_gt(x::Float64, y::Float64, omega::Float64, t::Float64)
@@ -159,21 +159,26 @@ addprocs(11)
 
     #Parameters to vary
 
-    nsp=20
+    nsp=10
     #kernels=["Gaussian","Triangle"]
-    omegas=[0.1,0.2,0.5,0.75,1.0]
-    ts=[0.1,0.2,0.5,1.0,2.0]
-    dist=["Gaussian","Uniform"]
-    a1s=[0.0,0.1,0.5,1]
+    omegas=[0.1,0.2,0.5,1.0]
+    ts=[0.1,0.2,0.5,1.0]
+    dists=["Gaussian","Uniform"]
+    a1s=[0.1,0.25,0.5,1.0]
+
+    #Demographic params
+    r=rand(Uniform(0.0,0.1),nsp)
+    Npop=fill(1000.0,nsp)
+    K=fill(2000.0,nsp)
 
     #create diff files for the following param combos
-    ns=[3,5,7,10,20] #No. of loci
-    reps=1:5
-    inits=[rand(Uniform(-0.8,0.8),nsp) for i in reps] #Initial trait distributions for species
+    ns=[5] #No. of loci
+    reps=1:50
+    inits=[rand(Uniform(-0.8,0.8),nsp) for i in reps] #Initial mean trait values for species
 
     pars=collect(Iterators.product(ns,reps))
 
-    steps=2000 #keep 1000 at minimum
+    steps=5000 #keep 1000 at minimum
     samples=[collect(1:9); collect(10:10:100); collect(100:100:steps)]
 
     #Final boss to run
@@ -192,14 +197,9 @@ addprocs(11)
         #Mating prob. matrix
         R=qgprob(loci)
 
-        #Demographic params
-        r=rand(Uniform(0.0,0.1),nsp)
-        Npop=fill(1000.0,nsp)
-        K=fill(2000.0,nsp)
-
         result=DataFrame()
 
-        for i1 in omegas,i2 in ts, i3 in dist, i4 in a1s 
+        for i1 in omegas,i2 in ts, i3 in dists, i4 in a1s 
 
             #Create alpha matrix 
             A=Amat(genos,nsp,nt,i1,i2)
@@ -233,3 +233,73 @@ addprocs(11)
 end
 
 pmap(compsim,pars)
+ 
+
+#######################################################################################
+#For the following code, restart the julia kernel. No need to parallelization.
+
+using CSV, DataFrames, Random, LinearAlgebra, Distances, Distributions, SpecialFunctions
+
+loc5="D:\\project_files\\comp_coevol\\data\\5sp\\"
+loc10="D:\\project_files\\comp_coevol\\data\\10sp\\"
+loc20="D:\\project_files\\comp_coevol\\data\\20sp\\"
+
+dat5=DataFrame()
+files5=readdir(loc5)
+for i in 1:length(files5)
+    append!(dat5,
+            CSV.read(string(loc5,files5[i]),DataFrame))
+end
+dat5.nsp .= 5
+
+dat10=DataFrame()
+files10=readdir(loc10)
+for i in 1:length(files10)
+    append!(dat10,
+            CSV.read(string(loc10,files10[i]),DataFrame))
+end
+dat10.nsp .= 10
+
+dat20=DataFrame()
+files20=readdir(loc20)
+for i in 1:length(files20)
+    append!(dat20,
+            CSV.read(string(loc20,files20[i]),DataFrame))
+end
+dat20.nsp .= 20
+
+dat=append!(dat5,dat10,dat20)
+
+nsps=[5,10,20]
+
+trmean1=[dat.pop[i] .>1 ? dat.trmean[i] : missing for i in 1:size(dat)[1]]
+dat.trmean1 = trmean1
+
+convdat=DataFrame()
+
+for i in nsps
+
+    dat0=dat[dat.nsp .== i, :]
+    pars=combine(groupby(dat,[:loci,:dist,:a,:omega,:t,:rep]), nrow => :count)
+    select!(pars,Not(:count))
+
+    for j in 1:nrow(pars)
+
+        dat1=dat0[
+            dat0.loci .== pars.loci[i] .&&
+            dat0.dist .== pars.dist[i] .&&
+            dat0.a .== pars.a[i] .&&
+            dat0.omega .== pars.omega[i] .&&
+            dat0.t .== pars.t[i] .&&
+            dat0.rep .== pars.rep[i], :]
+
+        reord=sortperm(dat1[dat1.time .==0,:].trmean1,rev=true)
+        tsteps=length(unique(dat1.time))
+
+        dat1= dat1[repeat(reord,tsteps),:]
+
+        
+
+    
+
+        

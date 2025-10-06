@@ -311,7 +311,6 @@ function single_sim12(steps,r,K1,K2,a1,A,R,Ng0,Npop,samples)
     
 end
 
-
 function single_sim2(steps,r,K,a1,genos,A,R,Ng0,Npop,samples)
 
     nsp=size(Ng0)[1]
@@ -638,13 +637,13 @@ CSV.write("3sp_test6.csv",res)
 ####################################
 #Trial run
 
-nsp=5
-n=5
-omega=0.2
-t=0.5
+nsp=10
+n=10
+omega=0.5
+t=0.2
 R=qgprob(n)
 nt=2*n + 1
-a1=0.1
+a1=1.0
 
 #Set up trait distributions of species populations
 #Each population has #nt discrete phenotypes centered around a specific trait value. Under no selection pressure, populations' trait means converge to this value.
@@ -690,7 +689,7 @@ initd
 steps=5000 #keep 1000 at minimum
 samples=[collect(1:9); collect(10:10:100); collect(100:100:steps)]
 
-res0=single_sim3(steps,r,K,a1,genos,A,R,Ng0,Npop,samples)
+res0=single_sim2(steps,r,K,a1,genos,A,R,Ng0,Npop,samples)
 
 trdat0=zeros(Float64,size(res0)[1],size(res0)[2])
 popdat0=zeros(Float64,size(res0)[1],size(res0)[2])
@@ -705,11 +704,10 @@ plot([0;samples],trdat0,
 
 
 anim= @animate for i in 1:size(res0)[1]
-        plot(res0[i,:,:])
+        plot(genos,res0[i,:,:]')
     end
 
 gif(anim,fps=2)
-
 
 
 #################################################################################
@@ -751,21 +749,4 @@ Ng0=zeros(Float64,nsp,nt)
 rands=rand(Uniform(-0.6,0.6),nsp)
 [Ng0[i,:]=pdf.(truncated(Normal(rands[i],0.2),-1.0,1.0),geno) for i in 1:nsp]
 Ng0=Ng0 ./ sum(Ng0,dims=2)
-
-
-tsteps=5000
-res1=getsum(tsteps,r,K1,K21,0.1,A,R,Ng0,Npop)
-pop1=res1[1]
-trdat1=res1[2]
-
-df1=stack(DataFrame(trdat1,:auto))
-df1.time=repeat(0:tsteps,outer=nsp)
-df1.species=repeat(1:nsp,inner=1+tsteps)
-df1=df1[:,[:time,:species,:value]]
-
-
-plot(df1.time,df1.value,
-    group=df1.species)
-
-
 
