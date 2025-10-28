@@ -4,10 +4,19 @@ library(tidyverse)
 library(patchwork)
 library(plotly)
 
+#Regression trees
+library(rsample)     # data splitting 
+library(rpart)       # performing regression trees
+library(rpart.plot)  # plotting regression trees
+library(ipred)       # bagging
+library(caret)       # bagging
+
 
 theme_set(theme_bw())
 theme_update(panel.grid = element_blank(),
              strip.background = element_rect(fill = 'orange'))
+
+ 
 
 cbpalette <-
   c(
@@ -21,6 +30,14 @@ cbpalette <-
     "#C5E772",
     "#4F2CAA"
   )
+
+alpha.gt=function(x,y,omega,t){
+  a1=0
+  if(abs(x-y)<t){
+    a1=exp(-((x-y)^2)/(omega^2))
+  }
+  return(a1)
+}
 
 mnnd<-function(a){
   a<-na.omit(a)
@@ -44,7 +61,103 @@ mnnd<-function(a){
 #Analyse 3 species convergence test
 ####################################
 
-dat=read.csv("D:/project_files/comp_coevol/data/3sp_test6.csv")%>%as_tibble()
+#Plot hypothetical extreme cases
+
+dat=read.csv("D:/project_files/comp_coevol/data/3sp_test7.csv")%>%as_tibble()
+dat_gau=read.csv("D:/project_files/comp_coevol/data/3sp_test_gaus.csv")%>%
+  as_tibble()%>%
+  filter((t>(-1-sp1)) & (t>(sp3-1)))
+  
+
+dat_uni=dat%>%
+  filter(dist=="Uniform")%>%
+  filter((t>(-0.8-sp1)) & (t>(sp3-0.8)))
+
+dat=dat_gau%>%
+  bind_rows(dat_uni)%>%
+  filter(sp1 !=0 & sp3!=0)
+
+dat5=dat%>%filter(loci==5)
+dat7=dat%>%filter(loci==7)
+dat10=dat%>%filter(loci==10)
+dat20=dat%>%filter(loci==20)
+dat3=dat%>%filter(loci==3)
+
+t.labs=str_wrap(c("Kernel Threshold: 0.1","Kernel Threshold: 0.3",
+         "Kernel Threshold: 0.5","Kernel Threshold: 0.7"),width=18)
+names(t.labs)=c("0.1","0.3","0.5","0.7")
+omega.labs=str_wrap(c("Kernel width: 0.05","Kernel width: 0.25",
+             "Kernel width: 0.45","Kernel width: 0.65",
+             "Kernel width: 0.85"),width=10)
+names(omega.labs)=c("0.05","0.25","0.45","0.65","0.85")
+
+
+p20g=dat20%>%
+      filter(dist=="Gaussian")%>%
+      mutate(diff12=sign(diff1))%>%
+      ggplot(aes(sp3,sp1,fill=diff12))+
+      geom_tile()+
+      facet_grid(omega~t,labeller=labeller(t=t.labs,omega=omega.labs))+
+      scale_fill_gradient(low="red",high="white")+
+      ggtitle("Gaussian traits")+
+      labs(x="Mean trait of species 3",
+           y="Mean trait of species 1")+
+      theme(legend.position="none")
+      
+
+p20u=dat20%>%
+  filter(dist=="Uniform")%>%
+  mutate(diff12=sign(diff1))%>%
+  ggplot(aes(sp3,sp1,fill=diff12))+
+  geom_tile()+
+  facet_grid(omega~t,labeller=labeller(t=t.labs,omega=omega.labs))+
+  scale_fill_gradient(low="red",high="white")+
+  ggtitle("Uniform traits")+
+  labs(x="Mean trait of species 3",
+       y="Mean trait of species 1")+
+  theme(legend.position="none")
+
+p20g|p20u
+
+p10g=dat10%>%
+  filter(dist=="Gaussian")%>%
+  mutate(diff12=sign(diff1))%>%
+  ggplot(aes(sp3,sp1,fill=diff12))+
+  geom_tile()+
+  facet_grid(omega~t,labeller=labeller(t=t.labs,omega=omega.labs))+
+  scale_fill_gradient(low="red",high="white")+
+  ggtitle("Gaussian traits")+
+  labs(x="Mean trait of species 3",
+       y="Mean trait of species 1")+
+  theme(legend.position="none")
+
+
+p10u=dat10%>%
+  filter(dist=="Uniform")%>%
+  mutate(diff12=sign(diff1))%>% 
+  ggplot(aes(sp3,sp1,fill=diff12))+
+  geom_tile()+
+  facet_grid(omega~t,labeller=labeller(t=t.labs,omega=omega.labs))+
+  scale_fill_gradient(low="red",high="white")+
+  ggtitle("Uniform traits")+
+  labs(x="Mean trait of species 3",
+       y="Mean trait of species 1")+
+  theme(legend.position="none")
+
+p10g|p10u
+
+"Caption: Result of single instance competition between three species where the
+mean trait of species 2 was fixed at zero while means of species 1 and 3 were allowed
+to vary ((-1,0) for species 1 and (0,1) for species 3).
+Red colour indicates that mean traits species 1 and 2 converged while the white color
+shows the cases of divergence.
+Two panels show whether the traits of each species followed Gaussian or Uniform distribitions.
+Horizontal (competition trait threshold) and vertical (kernel width) facets show
+different values of parameters of the competition kernel.
+"
+
+
+        
 #dat2=read.csv(paste0(loc,"3sp_test5.csv"))%>%as_tibble()
 
 #dat=dat1%>%bind_rows(dat2)
@@ -212,123 +325,95 @@ spgap2=dat%>%
   scale_fill_gradientn(colours=c("white","red"),
                        values=c(0,1))
 
-
-#Convergence likelihoods are similar for Gaussian vs. uniformly distributed traits!
+spgap1|spgap2
 
 ###################################################################
 #Plot 20 sp simulation results
 #####################################################################
 
-loc5="D:/project_files/comp_coevol/data/5sp/"
-loc10="D:/project_files/comp_coevol/data/10sp/"
-loc20="D:/project_files/comp_coevol/data/20sp/"
-
-dat5=tibble()
-files5=list.files(loc5)
-for(i in 1:length(files5)){
-  dat5=dat5%>%
-        bind_rows(
-        (read.csv(paste0(loc5,files5[i]))%>%
-           as_tibble()))
-}
-dat5=dat5%>%mutate(nsp=5)
-
-dat10=tibble()
-files10=list.files(loc10)
-for(i in 1:length(files10)){
-  dat10=dat10%>%
-    bind_rows(nsps
-      (read.csv(paste0(loc10,files10[i]))%>%
-         as_tibble()))
-}
-dat10=dat10%>%mutate(nsp=10)
-
-dat20=tibble()
-files20=list.files(loc20)
-for(i in 1:length(files20)){
-  dat20=dat20%>%
-    bind_rows(
-      (read.csv(paste0(loc20,files20[i]))%>%
-         as_tibble()))
-}
-dat20=dat20%>%mutate(nsp=20)
-
-
-dat=dat5%>%bind_rows(dat10)%>%bind_rows(dat20)
-
 #################################################
 #Find proportions of pairs of species converging 
 ##################################################
 
-##########
-##USE THIS CODE ONCE TO CREATE THE CONVDAT FILE
-##########
 
-#Code to calculate no. of convergences between pairs of adjacent species.
+convdat=read.csv("D:/project_files/comp_coevol/data/convdatfull.csv")%>%
+  as_tibble()
 
+convdat%>%
+  filter(t==1 & omega==0.5 & dist=="Gaussian")%>%
+  mutate(a=as.factor(a))%>%
+  group_by(nsp,loci,dist,a,t,time)%>%
+  summarize(mean=mean(conv),
+            sd=sd(conv))%>%
+  ungroup()%>%
+  ggplot(aes(time,mean,col=a,fill=a))+
+  geom_line()+
+  geom_ribbon(aes(ymin=mean-sd,ymax=mean+sd),alpha=0.2)+
+  facet_grid(nsp~loci,labeller=label_both)
+
+times=unique(convdat$time)
 nsps=c(5,10,20)
+pars=expand.grid(nsp=nsps,time=times)
+result2=tibble()
 
-dat=dat%>%
-  mutate(trmean1=ifelse(pop>1,trmean,NA))
+varset=tibble(var=c("loci","dist","a","omega","t","rep"))
 
-convdat=tibble()
+for (i in 1:nrow(pars)){
+  
+  dat=convdat%>%
+    filter(nsp==pars[i,1],time==pars[i,2])
+  
+  m=rpart(
+    formula=conv~.,
+    data=dat,
+    method='anova',
+    xval=10
+  )
+  
+  res=m$variable.importance
 
-for (j in nsps){
+  vars=names(res)
   
-  dat0=dat%>%filter(nsp ==j)
-  pars=dat0%>%count(loci,dist,a,omega,t,rep)%>%as.data.frame()
+  rs=tibble(var=vars,imp=res)
   
-  for (i in 1:nrow(pars)){
-    
-    dat1=dat0%>%
-      filter(loci==pars$loci[i],
-             dist==pars$dist[i],
-             a==pars$a[i],
-             omega==pars$omega[i],
-             t==pars$t[i],
-             rep==pars$rep[i])
+  if(nrow(rs)>0){
+    rs=rs%>%full_join(varset)
+  }else{
+    rs=tibble(var=varset$var,imp=0)
+  }
   
-    ord1=order(dat1%>%
-                 filter(time==0)%>%
-                 pull(trmean))
+
+  erdat=m$cptable
   
-    cps=dat1%>%
-        #filter(time %in% c(0,max(time)))%>%
-        group_by(time)%>%
-        slice(ord1)%>%
-        ungroup()%>%
-      group_by(time)%>%
-      reframe(td=diff(trmean))%>%
-      ungroup()%>%
-      group_by(time)%>%
-      mutate(sppair=1:length(td))%>%
-      ungroup()%>%
-      group_by(sppair)%>%
-      reframe(conv=diff(td))%>%
-      #summarize(conv=sum(diff(td)<0))%>%
-      ungroup()%>%
-      summarize(sum(conv<0)/length(sppair))%>%pull()
-    
-    convdat=convdat%>%
-      bind_rows(tibble(
-        nsp=j,
-        loci=pars$loci[i],
-        dist=pars$dist[i],
-        a=pars$a[i],
-        omega=pars$omega[i],
-        t=pars$t[i],
-        rep=pars$rep[i],
-        conv=cps))
-    }
+  error=erdat[nrow(erdat),3]
+  
+  result2=result%>%
+    bind_rows(
+      tibble(
+        nsp=pars[i,1],
+        time=pars[i,2],
+        vars=rs$var,
+        imp=rs$imp,
+        error=error
+      )
+    )
+  
 }
 
-write.csv(convdat,"D:/project_files/comp_coevol/data/convdat.csv")
+result2%>%
+  mutate(nsp=as.factor(nsp),
+          rsq=1-error)%>%
+  ggplot(aes(time,rsq,col=nsp))+
+  geom_line()
 
-################################################################################
+
+result2%>%
+  replace_na(list(imp=0))%>%
+  ggplot(aes(time,imp,col=vars))+
+  geom_line()+
+  facet_wrap(vars(nsp))
 
 
-convdat=read.csv("D:/project_files/comp_coevol/data/convdat.csv")%>%
-  as_tibble()
 
   convdat%>%
   group_by(nsp,loci,dist,a,omega,t)%>%
@@ -338,25 +423,107 @@ convdat=read.csv("D:/project_files/comp_coevol/data/convdat.csv")%>%
   rename("species"=nsp)%>%
   mutate(omega=as.factor(omega))%>%
   filter(loci==5 & dist=="Gaussian")%>%
-  ggplot(aes(a,mean,col=omega,fill=omega))+
+  ggplot(aes(t,mean,col=omega,fill=omega))+
   geom_line()+
   geom_ribbon(aes(ymin=mean-sd,ymax=mean+sd),alpha=0.2)+
-  facet_grid(t~species,labeller=label_both)+
-  labs(x="Strength of interspecific interaction",
+  facet_grid(a~species,labeller=label_both)+
+  labs(x="Competition trait threshold",
        y="Average proportion of convergences")
   
+  #Draw a decision tree
+  
+  m1= rpart(
+    formula = conv ~ .,
+    data    = convdat,
+    method  = "anova"
+  )
+  
+  rpart.plot(m1)
+  
+  plotcp(m1)
+  
+  convdat10=read.csv("D:/project_files/comp_coevol/data/convdat10.csv")%>%
+    as_tibble()
+  
+  m10=rpart(
+    formula = conv ~ .,
+    data    = convdat10,
+    method  = "anova"
+  )
+  
+  rpart.plot(m10)
+  
+  plotcp(m10)
 
 ############################################################
 #MNND values
 
-mnndat=dat%>%
-        group_by(nsp,loci,dist,a,omega,t,rep,time)%>%
-        summarize(mnnds=mnnd(trmean))%>%
-        ungroup()%>%
-        group_by(nsp,loci,dist,a,omega,t,time)%>%
-        summarize(mean=mean(mnnds),
-                  sd=sd(mnnds))%>%
-        ungroup()
+mnndat=read.csv("D:/project_files/comp_coevol/data/mnndat.csv")%>%
+    as_tibble()
+  
+mndat2=mnndat%>%
+  filter(time==max(time))%>%
+  select(-time)
+
+mnndat=mndat2%>%
+    group_by(nsp,loci,dist,a,omega,t)%>%
+    summarize(mean=mean(mnnds),
+            sd=sd(mnnds))%>%
+    ungroup()
+
+mnndat5=mnndat%>%filter(nsp==5)
+mnndat10=mnndat%>%filter(nsp==10)
+mnndat20=mnndat%>%filter(nsp==20)
+
+mn5g=mnndat10%>%
+  filter(dist=="Gaussian")%>%
+  mutate(loci=as.factor(loci))%>%
+  ggplot(aes(a,mean,col=loci,fill=loci))+
+  geom_line()+
+  geom_ribbon(aes(ymin=mean-sd,ymax=mean+sd),alpha=0.2)+
+  facet_grid(omega~t,labeller=label_both)+
+  labs(x="Relative strength of interspecific competition",
+       y="MNND")+
+  ggtitle("Gaussian traits")
+  
+mn5u=mnndat10%>%
+    filter(dist=="Uniform")%>%
+    mutate(loci=as.factor(loci))%>%
+    ggplot(aes(a,mean,col=loci,fill=loci))+
+    geom_line()+
+    geom_ribbon(aes(ymin=mean-sd,ymax=mean+sd),alpha=0.2)+
+    facet_grid(omega~t,labeller=label_both)+
+    labs(x="Relative strength of interspecific competition",
+         y="MNND")+
+  ggtitle("Uniform traits")
+  
+  mn5g|mn5u
+  
+  
+m2=rpart(
+  formula = mnnds ~ .,
+  data    = mndat2,
+  method  = "anova"
+)
+
+rpart.plot(m2)
+
+plotcp(m2)
+  
+mndat=mnndat%>%
+  filter(time==max(time))%>%
+  group_by(nsp,loci,dist,a,omega,t)%>%
+  summarize(mean=mean(mnnds),
+            sd=sd(mnnds))%>%
+  ungroup()
+
+mndat%>%
+  ggplot(aes(omega,t,fill=mean))+
+  geom_tile()+
+  facet_grid(loci~a)+
+  scale_fill_gradientn(colours=c("white","red"),
+                       values=c(0,1))
+  
 
 mplot1=mnndat%>%
   rename("species"=nsp)%>%
@@ -386,12 +553,24 @@ mplot2=mnndat%>%
 
 ############################################################
 #Extinctions
-extdat=dat%>%
-  group_by(nsp,rep,loci,dist,omega,t,a,time)%>%
-  summarize(live=sum(pop>1)/length(pop))%>%
-  ungroup()%>%
-  filter(time==1000)
+extdat=read.csv("D:/project_files/comp_coevol/data/extdat.csv")%>%
+  as_tibble()
 
+ext.fin=extdat%>%
+  filter(time == max(time))%>%
+  select(-time)
+
+ex.m=rpart(
+    formula = extinct ~ .,
+    data    = ext.fin,
+    method  = "anova"
+  )
+  
+rpart.plot(ex.m)
+  
+plotcp(ex.m)
+
+  
 
 
 eplot2=extdat%>%
@@ -441,11 +620,56 @@ library(rpart.plot)  # plotting regression trees
 library(ipred)       # bagging
 library(caret)       # bagging
 
+convdat=read.csv("D:/project_files/comp_coevol/data/convdat.csv")%>%
+  as_tibble()
+
+convdat100=read.csv("D:/project_files/comp_coevol/data/convdat100.csv")%>%
+  as_tibble()
+
+convdat100%>%
+  group_by(nsp,loci,dist,a,omega,t)%>%
+  summarize(mean=mean(conv),
+            sd=sd(conv))%>%
+  ungroup()%>%
+  rename("species"=nsp)%>%
+  mutate(omega=as.factor(omega))%>%
+  filter(loci==5 & dist=="Gaussian")%>%
+  ggplot(aes(a,mean,col=omega,fill=omega))+
+  geom_line()+
+  geom_ribbon(aes(ymin=mean-sd,ymax=mean+sd),alpha=0.2)+
+  facet_grid(t~species,labeller=label_both)+
+  labs(x="Strength of interspecific interaction",
+       y="Average proportion of convergences")
+
 
 convdat=convdat%>%
   mutate(
          dist=as.factor(dist),
         )
+
+
+
+
+m1 <- rpart(
+  formula = conv ~ .,
+  data    = convdat,
+  method  = "anova"
+)
+
+rpart.plot(m1)
+
+plotcp(m1)
+
+
+m100=rpart(
+  formula=conv~.,
+  data=convdat100,
+  method='anova'
+)
+
+rpart.plot(m100)
+
+
 
 convdat2=convdat%>%
   group_by(nsp,loci,dist,omega,t,a)%>%

@@ -159,7 +159,7 @@ addprocs(11)
 
     #Parameters to vary
 
-    nsp=10
+    nsp=20
     #kernels=["Gaussian","Triangle"]
     omegas=[0.1,0.2,0.5,1.0]
     ts=[0.1,0.2,0.5,1.0]
@@ -172,7 +172,7 @@ addprocs(11)
     K=fill(2000.0,nsp)
 
     #create diff files for the following param combos
-    ns=[5] #No. of loci
+    ns=[10] #No. of loci
     reps=1:50
     inits=[rand(Uniform(-0.8,0.8),nsp) for i in reps] #Initial mean trait values for species
 
@@ -246,25 +246,26 @@ loc20="D:\\project_files\\comp_coevol\\data\\20sp\\"
 
 dat5=DataFrame()
 files5=readdir(loc5)
-for i in 1:length(files5)
+for i in files5
     append!(dat5,
-            CSV.read(string(loc5,files5[i]),DataFrame))
+            CSV.read(string(loc5,i),DataFrame))
 end
 dat5.nsp .= 5
 
+
 dat10=DataFrame()
 files10=readdir(loc10)
-for i in 1:length(files10)
+for i in files10
     append!(dat10,
-            CSV.read(string(loc10,files10[i]),DataFrame))
+            CSV.read(string(loc10,i),DataFrame))
 end
 dat10.nsp .= 10
 
 dat20=DataFrame()
 files20=readdir(loc20)
-for i in 1:length(files20)
+for i in files20
     append!(dat20,
-            CSV.read(string(loc20,files20[i]),DataFrame))
+            CSV.read(string(loc20,i),DataFrame))
 end
 dat20.nsp .= 20
 
@@ -280,23 +281,266 @@ convdat=DataFrame()
 for i in nsps
 
     dat0=dat[dat.nsp .== i, :]
-    pars=combine(groupby(dat,[:loci,:dist,:a,:omega,:t,:rep]), nrow => :count)
-    select!(pars,Not(:count))
+    pars=unique(dat0[:,5:10])
 
     for j in 1:nrow(pars)
 
         dat1=dat0[
-            dat0.loci .== pars.loci[i] .&&
-            dat0.dist .== pars.dist[i] .&&
-            dat0.a .== pars.a[i] .&&
-            dat0.omega .== pars.omega[i] .&&
-            dat0.t .== pars.t[i] .&&
-            dat0.rep .== pars.rep[i], :]
+            dat0.loci .== pars.loci[j] .&&
+            dat0.dist .== pars.dist[j] .&&
+            dat0.a .== pars.a[j] .&&
+            dat0.omega .== pars.omega[j] .&&
+            dat0.t .== pars.t[j] .&&
+            dat0.rep .== pars.rep[j], :]
 
-        reord=sortperm(dat1[dat1.time .==0,:].trmean1,rev=true)
-        tsteps=length(unique(dat1.time))
+        reord=sortperm(dat1[dat1.time .==0,:].trmean1)
+        times=unique(dat1.time)
+        tsteps=length(times)
+        dat1= dat1[(sort(repeat(i .* (1:tsteps),i)) .- i) + repeat(reord,tsteps),[:time,:sp,:trmean1]]
 
-        dat1= dat1[repeat(reord,tsteps),:]
+        diffdat=DataFrame()
+        
+        for k in times
+            dat2=dat1[dat1.time .== k,:]
+            td=collect(skipmissing(diff(dat2.trmean1)))
+
+            if length(td)>0
+                append!(diffdat,
+                DataFrame(time=k,
+                sppair=1:length(td),
+                td=td))
+            end
+        end
+
+        sppairs=1:(i-1)
+        diffdat2=DataFrame()
+        for l in sppairs
+            dat2=diffdat[diffdat.sppair .== l,:]
+            td=diff(dat2.td)
+            append!(diffdat2,
+            DataFrame(sppair=l,
+            times=1:length(td),
+            td=td))
+        end
+        conv=sum(diffdat2.td .< 0)/nrow(diffdat2)
+
+        append!(convdat,
+        DataFrame(nsp=i,
+                loci=pars.loci[j],
+                dist=pars.dist[j],
+                a=pars.a[j],
+                omega=pars.omega[j],
+                t=pars.t[j],
+                rep=pars.rep[j],
+                conv=conv))
+    end
+end
+
+CSV.write(string("D:\\project_files\\comp_coevol\\data\\","convdat.csv"),convdat)
+
+
+
+########################################################################################
+#Recalculate the convergence data only for the first 100 time steps
+
+using CSV, DataFrames, Random, LinearAlgebra, Distances, Distributions, SpecialFunctions
+
+loc5="D:\\project_files\\comp_coevol\\data\\5sp\\"
+loc10="D:\\project_files\\comp_coevol\\data\\10sp\\"
+loc20="D:\\project_files\\comp_coevol\\data\\20sp\\"
+
+dat5=DataFrame()
+files5=readdir(loc5)
+for i in files5
+    append!(dat5,
+            CSV.read(string(loc5,i),DataFrame))
+end
+dat5.nsp .= 5
+
+dat10=DataFrame()
+files10=readdir(loc10)
+for i in files10
+    append!(dat10,
+            CSV.read(string(loc10,i),DataFrame))
+end
+dat10.nsp .= 10
+
+dat20=DataFrame()
+files20=readdir(loc20)
+for i in files20
+    append!(dat20,
+            CSV.read(string(loc20,i),DataFrame))
+end
+dat20.nsp .= 20
+
+dat=append!(dat5,dat10,dat20)
+
+
+nsps=[5,10,20]
+
+trmean1=[dat.pop[i] .>1 ? dat.trmean[i] : missing for i in 1:size(dat)[1]]
+dat.trmean1 = trmean1
+
+convdat=DataFrame()
+
+for i in nsps
+
+    dat0=dat[dat.nsp .== i, :]
+    pars=unique(dat0[:,5:10])
+
+    for j in 1:nrow(pars)
+
+        dat1=dat0[
+            dat0.loci .== pars.loci[j] .&&
+            dat0.dist .== pars.dist[j] .&&
+            dat0.a .== pars.a[j] .&&
+            dat0.omega .== pars.omega[j] .&&
+            dat0.t .== pars.t[j] .&&
+            dat0.rep .== pars.rep[j], :]
+
+        reord=sortperm(dat1[dat1.time .==0,:].trmean1)
+        times=unique(dat1.time)
+        tsteps=length(times)
+        dat1= dat1[(sort(repeat(i .* (1:tsteps),i)) .- i) + repeat(reord,tsteps),[:time,:sp,:trmean1]]
+
+        dat2=Matrix(unstack(dat1,:time,:trmean1)[:,Not(1)])
+
+        etimes=[findfirst(ismissing.(dat2[i,:])) for i in 1:size(dat2)[1]]
+
+        etimes=replace(etimes,nothing=>tsteps+1)
+
+        etimes=DataFrame(sp=1:length(etimes),ext=etimes)
+
+        sort!(etimes,order(:ext))
+
+        convs=DataFrame()
+        
+        if minimum(etimes.ext) < tsteps
+
+            samp=deepcopy(dat2)
+            counter=1            
+            
+            for k in 1:findfirst(etimes.ext .==tsteps+1)
+                
+                samp=dat2[:,counter: etimes.ext[k]-1]
+                
+                if size(samp)[2] >=2
+
+                    if counter !=1
+                        samp=samp[Not(etimes.sp[1:k-1]),:]
+                    end
+
+                    diffdat1=Matrix(undef,size(samp)[1]-1,size(samp)[2])
+                    [diffdat1[:,i1]=diff(samp[:,i1]) for i1 in 1:size(samp)[2]]
+                    diffdat2=Matrix(undef,size(diffdat1)[1],size(diffdat1)[2]-1)
+                    [diffdat2[i2,:] =diff(diffdat1[i2,:]) for i2 in 1:size(diffdat1)[1]]
+                    conv=[sum(diffdat2[:,i3] .<0)/size(diffdat2)[1] for i3 in 1:size(diffdat2)[2]]
+
+                    append!(convs,
+                    DataFrame(time=times[counter:(etimes.ext[k]-2)],
+                            conv=conv))
+                end
+
+                counter=etimes.ext[k]
+            end
+        else
+
+            diffdat1=Matrix(undef,size(dat2)[1]-1,size(dat2)[2])
+            [diffdat1[:,i4]=diff(dat2[:,i4]) for i4 in 1:size(dat2)[2]]
+            diffdat2=Matrix(undef,size(diffdat1)[1],size(diffdat1)[2]-1)
+            [diffdat2[i5,:] =diff(diffdat1[i5,:]) for i5 in 1:size(diffdat1)[1]]
+            conv=[sum(diffdat2[:,i6] .<0)/size(diffdat2)[1] for i6 in 1:size(diffdat2)[2]]
+
+            append!(convs,
+                DataFrame(time=times[1:(length(times)-1)],
+                        conv=conv))
+        end
+
+        
+        append!(convdat,
+        DataFrame(nsp=i,
+                loci=pars.loci[j],
+                dist=pars.dist[j],
+                a=pars.a[j],
+                omega=pars.omega[j],
+                t=pars.t[j],
+                rep=pars.rep[j],
+                time=convs.time,
+                conv=convs.conv))
+    end
+end
+
+CSV.write(string("D:\\project_files\\comp_coevol\\data\\","convdatfull.csv"),convdat)
+
+
+####################################################################################
+#Calculate MNND and extinction values
+
+using CSV, DataFrames, Random, LinearAlgebra, Distances, Distributions, SpecialFunctions
+
+function mnnds(a)
+
+    a=a[Not(ismissing.(a))]
+
+    if length(unique(a)) > 1
+        
+        a=sort(a,rev=true)
+        nnd=zeros(Float64,length(a))
+        nnd[1]=a[1]-a[2]
+        nnd[length(nnd)]=a[length(a)-1]-a[length(a)]
+        [nnd[i] = min(a[i-1]-a[i],a[i]-a[i+1]) for i in 2:(length(a)-1)]
+        ranges=a[1]-a[length(a)]
+        mnnd=sum(nnd)/length(nnd)
+        mmax=ranges/(length(a)-1)
+        return mnnd/mmax
+
+    else
+        return missing
+    end
+end
+
+loc5="D:\\project_files\\comp_coevol\\data\\5sp\\"
+loc10="D:\\project_files\\comp_coevol\\data\\10sp\\"
+loc20="D:\\project_files\\comp_coevol\\data\\20sp\\"
+
+dat5=DataFrame()
+files5=readdir(loc5)
+for i in files5
+    append!(dat5,
+            CSV.read(string(loc5,i),DataFrame))
+end
+dat5.nsp .= 5
+
+
+dat10=DataFrame()
+files10=readdir(loc10)
+for i in files10
+    append!(dat10,
+            CSV.read(string(loc10,i),DataFrame))
+end
+dat10.nsp .= 10
+
+dat20=DataFrame()
+files20=readdir(loc20)
+for i in files20
+    append!(dat20,
+            CSV.read(string(loc20,i),DataFrame))
+end
+dat20.nsp .= 20
+
+dat=append!(dat5,dat10,dat20)
+
+trmean1=[dat.pop[i] .>1 ? dat.trmean[i] : missing for i in 1:size(dat)[1]]
+dat.trmean1 = trmean1
+
+mnndat=combine(groupby(dat,[:nsp,:loci,:dist,:a,:omega,:t,:rep,:time,]), :trmean1 => (x -> mnnds(x)) => :mnnds)
+
+CSV.write(string("D:\\project_files\\comp_coevol\\data\\","mnndat.csv"),mnndat)
+
+
+extdat=combine(groupby(dat,[:nsp,:loci,:dist,:a,:omega,:t,:rep,:time,]), :pop => (x -> sum(x .< 1)) => :extinct)
+
+CSV.write(string("D:\\project_files\\comp_coevol\\data\\","extdat.csv"),extdat)
 
         
 
