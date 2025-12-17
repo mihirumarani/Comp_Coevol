@@ -77,6 +77,13 @@ dat=dat_gau%>%
   bind_rows(dat_uni)%>%
   filter(sp1 !=0 & sp3!=0)
 
+
+m3=rpart(formula=diff1~.,
+         data=dat%>%select(-diff2),
+         method='anova',
+         xval=10,
+         )
+
 dat5=dat%>%filter(loci==5)
 dat7=dat%>%filter(loci==7)
 dat10=dat%>%filter(loci==10)
@@ -381,13 +388,12 @@ for (i in 1:nrow(pars)){
   }else{
     rs=tibble(var=varset$var,imp=0)
   }
-  
 
   erdat=m$cptable
   
   error=erdat[nrow(erdat),3]
   
-  result2=result%>%
+  result2=result2%>%
     bind_rows(
       tibble(
         nsp=pars[i,1],
