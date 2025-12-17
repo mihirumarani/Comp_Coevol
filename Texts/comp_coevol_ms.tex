@@ -1,0 +1,339 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{mathtools,amssymb}
+%\usepackage{cite}
+\usepackage{nameref,hyperref}
+\usepackage{lineno}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage[toc,page]{appendix}
+%\linespread{2.0}%double spacing lines
+\usepackage{setspace}
+\usepackage{subcaption}
+\usepackage[colorinlistoftodos]{todonotes}
+%\usepackage{refcheck}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{marginnote}
+\captionsetup[subtable]{position=top}
+\bibliographystyle{ecol_let}
+\usepackage{float}
+\captionsetup[subtable]{position=top}
+\usepackage[document]{ragged2e}
+%\bibliographystyle{apalike}
+%\linenumbers
+\doublespacing
+
+\begin{document}
+
+\begin{comment}
+
+\textbf{Title}:\\
+The effect of quantitative genetic processes on eco-evolutionary dynamics of multispecies competition\\
+
+\textbf{Authors}:\\
+*$^+$Mihir S. Umarani$^1$, $^+$Carlos J. Meli\'an$^2$, Catherine H. Graham$^3$, Stephen B. Baines$^1$ \\
+
+$^*$ corresponding author\\
+$^+$ Co-first authors
+
+\textbf{Address}:
+\begin{enumerate}
+  \item Department of Ecology and Evolution, Stony Brook University, Stony Brook, New York, USA\\
+  (Stephen Baines: stephen.baines@stonybrook.edu)
+  \item Department of Fish Ecology and Evolution, Centre of Ecology, Evolution and Biogeochemistry, EAWAG Swiss Federal Institute of Aquatic Science and Technology, Switzerland and Institute of Ecology and Evolution, University of Bern, Switzerland\\
+  (Carlos Melian: carlos.melian@eawag.ch)
+  \item Biodiversity and Conservation Biology, Swiss Federal Research Institute WSL, Zürcherstrasse 111, 8903 Birmensdorf, Switzerland\\
+  (Catherine Graham: Catherine.graham@wsl.ch)
+\end{enumerate}
+
+(\textbf{Short Running Title:} Evolutionary ecology of competition)\\
+
+\textbf{Keywords:} Coevolution, competition, quantitative genetics, Lotka-Volterra dynamics, network structure, trait overdispersion\\
+
+\textbf{Type of article}: Letter
+
+\textbf{Abstract}:131 words, \textbf{Main body}:4975 words  ,32 references, 5 figures, 1 table\\
+
+\textbf{Correspondence:}\\
+
+Mihir S. Umarani\\
+
+Department of Ecology and Evolution, Stony Brook University, 650, Life Sciences Building, Stony Brook University, NY 11794-5245\\
+
+\textbf{Email}: mihir.umarani@gmail.com\\
+
+
+\textbf{Statement of Authorship}:\\
+MSU and SBB conceived of the study. MSU analysed the model, performed the simulations and generated the results. MSU, CJM and SBB wrote the manuscript. CJM provided guidance on modeling and analysis. CHG hosted and provided funding for travels. CJM and CHG provided critical feedbacks to the study design and result interpretations and edited the manuscript.\\
+
+\textbf{Data accessibility statement}: No data was used or generated.\\
+
+
+\textbf{Abstract}:\\
+
+Theory generally expects trait overdispersion as a signature of multispecies competition, yet the empirical studies often show coexistence with trait clustering. Many ecological and evolutionary causes have been proposed to explain coexistence in competing species assemblages. However, a general framework linking trait distribution patterns to coexistence in multispecies assemblages is lacking. We address the interaction between ecological and evolutionary processes by contrasting two quantitative genetics models of trait-mediated competition. Our results show gradual trait divergence but also higher extinction rates under the quantitative genetic limit scenario, while decreasing the number of loci in the quantitative trait led to higher species richness and convergent evolutionary trajectories. We highlight the crucial role of within-species trait distributions that modulate the trait evolutionary dynamics and may induce deviations from the expected trend of trait divergence. \par
+
+\end{comment}
+
+\begin{comment}
+Unused text:
+There have been many theoretical studies describing the effect of interspecific competition on the eco-evolutionary dynamics within a community \cite[e.g.,][]{Schoener1965,Roughgarden1974,Connell1980,Roughgarden1983,Scheffer2006,Davies2007},  but generalizations about how ecological and evolutionary processes affect such dynamics are still elusive.
+
+Moreover, analyses of interaction networks for species-rich communities have revealed the prevalence of highly modular structures that imply the presence of persistent strong interactions among clusters of species in communities \cite{dattilo2013spatial,Montoya2015}.
+
+\end{comment}
+
+
+\clearpage
+
+\linenumbers
+\section{Introduction}
+
+\begin{comment}
+Make a more clear convergence definition and connect it to Fig 1 and 2.
+\end{comment}
+
+Understanding the impact of interspecific competition on community-level patterns has been a heavily studied \cite[e.g.,][]{Schoener1965,Roughgarden1974,Connell1980,Roughgarden1983,Scheffer2006,Davies2007}, yet an unresolved topic. It is generally expected that pairwise competition results in trait divergence or competitive exclusion. Extending these results is thought to lead to the pattern of trait overdispersion at the community level\cite[e.g.,][]{Schoener1965,Connell1980,schluter1994experimental,Davies2007}. While there are theoretical demonstrations showing contrasting outcomes\cite[e.g.][]{abrams1990ecological,Roughgarden1983,Scheffer2006}, there are no clear expectations about how different ecological and evolutionary contexts of competition lead to specific patterns. This hinders attempts to tie community-level pattern to underlying processes. If we are to accurately use the growing body of experimental and empirical data to test the importance of competitive interactions in structuring communities, we must identify the ecological and evolutionary conditions under which competition may or may not lead to trait overdispersion.\par
+
+  Competition is described as an overlap between niches which reduces the fitness of competitors. Applying this definition for the pair of populations of competing species invokes the following critical eco-evolutionary contexts- how the niches are defined in terms of species's traits and how the traits are distributed across populations and how the trait propagate across generations.  
+
+Trait distributions can modulate how competition affects trait evolution. In niche theory, competitive intensity is directly related to the overlap in niches between species, which is characterized using ‘competition kernel’ functions that relate the similarity in traits between competitors to the effect of competition on population growth \cite{PhysRevLett.98.258101,hernandez2009species,Leimar2013}. When described at the individual level, such functions imply that intraspecific trait variation critically alters the effect of the selection pressure on trait evolution. Taper and Case (1985) first demonstrated that Gaussian trait distributions lead to trait divergence between pairs of competing species, as well as within a community context (Fig. 1, scenario 1). When different trait distributions prevail, however, the combined effect of “diffuse” competition may overcome the mutual repulsive forces of pairwise competition resulting in trait convergence (Fig. 1, scenario 2). Thus, the underlying quantitative genetic architecture that governs the process of inheritance and trait distributions can determine whether divergence or convergence occurs in response to competition. The impact of genetic architecture on evolutionary dynamics has been analyzed in isolation \cite{yamauchi2009intraspecific,barabas2016effect,Barton2017}, but their interactions within multispecies communities under various ecological contexts (i.e., different competition kernels) remains unexplored.\par
+
+In this study, different quantitative genetics models are combined with a dynamic population model to explore how genetic architecture affects trait and community dynamics in a multispecies community over evolutionary time. We use a Lotka-Volterra-based discrete time model to incorporate the ecological context via competitive kernels which describe how the strength of competition depends on the trait difference between individuals. To simulate the propagation of quantitative traits in response to selection and reproduction, i.e., the impact on competitive interactions on fitness, we use two different quantitative genetic models of inheritance. The quantitative genetic limit model \cite{Lande1976,Falconer1981,Barton2017} and a Shpak-Kondrashov Hypergeometric model of finite loci \cite{Shpak1999}. By combining an ecological context with a quantitative genetics model, we provide predictions about how different network patterns emerge and persist as well as coevolutionary trends in trait divergence and convergence patterns among the species within a model community.\par 
+
+We find that the evolutionary trends are most sensitive to the quantitative genetic architecture of the traits. When traits are under the quantitative genetic limit scenario, they follow a divergence pattern that is generally robust to different competition kernel functions. However, strong deviations from the pattern of trait overdispersion are possible when traits are governed by fewer number of loci, i.e., the hypergeometric model, and the chance of observing trait clustering is closely associated with the characteristics of the competitive kernels. Overall, our results highlight gradual trait divergence but fast species extinctions under the quantitative genetic limit scenario, while decreasing the number of loci in the quantitative trait led to higher species richness and convergent evolutionary trajectories.\par
+
+
+\section{Methods}
+
+We first describe the model components, starting with the description of individual-level trait-mediated competition and how it affects the population and trait dynamics. We then explain the model parameterization representing different ecological and quantitative genetic processes (Table 1).\par
+
+
+\subsection{Model description}
+
+We assume populations of \emph{n} species compete via a single shared functional trait. The phenotypic values of interacting individuals alone determine the strength of the interspecific competition, not the species’ identity. The strength of competition between individuals with traits z and z’ is a function of difference between z and z’, commonly called as 'competition kernels'. We also assume that competition is the only force of selection that acts upon the trait and determines the strength and directionality of trait evolution. All the species’ populations are assumed to be made of randomly mating diploid populations with non-overlapping generations. Traits follow an identical quantitative genetic mechanism of inheritance. Population growth under selection is modelled using a discrete time Lotka-Volterra equation for competition. An illustration of the model applied for a two species competition is shown in Fig 1.
+
+Instantaneous growth rate or a fitness of an individual with phenotype \emph{z} of species \emph{i} can be written as follows\cite{Lande:1979,Taper1985,barabas2016effect}:
+
+\begin{linenomath*}
+\begin{equation}
+    w_i(z,t) = r_i \left(1-\frac{\sum \limits_{j=1,i\neq j}^{n} N_j(t)A_{ij}\int_{z'} \alpha(z,z')p_i(z,t)p_j(z',t)dz'}{K_i}\right)
+    \label{fitness}
+\end{equation}
+\end{linenomath*}
+
+
+
+where $r_i$, $K_i$ and $N_i$ are the intrinsic growth rate, carrying capacity and the population size of species \emph{i}, respectively. $p_i(z,t)$ is the probability density of a phenotype \emph{z} for species \emph{i}. Intrinsic growth rate $r_i$, is assumed to be constant for a range of phenotypic values (-5 to 5) representing the physiologically possible range, beyond which the growth rate is zero. To implement this effect, the growth of a total population is sharply reduced when the mean phenotypic values are near the phenotypic limits. It should be noted that the mechanism of intraspecific competition is not trait based and is only described by logistic growth with a given carrying capacity. $A_{ij}$ is parameter that modulates the overall effect of competition and is intended to distinguish between the impacts of intra- and interspecific competition. For intraspecific competition (i=j), $A_{ij}$ is fixed at the highest value of 1 indicating that per capita effect of intraspecific competition is always stronger than or equal to the effect of interspecific competition. The competition kernel, $\alpha(z,z')$, shows the strength of competition between a pair of heterospecific individuals as a function of their phenotypic values, \emph{z} and \emph{z'}. We used two different functional forms for competition kernels. The first one is written as:
+
+\begin{linenomath*}
+\begin{equation}
+\alpha(z,z') = \biggl\{
+\begin{matrix}
+e^{\left(\frac{-(z-z')^2}{\sigma^2}\right)}, & & |z-z'|<t^*
+\\
+0, & & |z-z'| \geqslant t^*,
+\end{matrix}
+\label{kernel1}
+\end{equation}
+\end{linenomath*}
+
+and it is represented by a Gaussian function with bounds where the strength of competition is zero when the difference between the phenotypic values of competitors is larger than some threshold \emph{t*}. $\sigma$, is the width of the competition which determines the rate of decrease in interaction strength as the trait difference becomes larger \cite{Nuismer&Harmon:2015,barabas2016effect}. The second function can be represented as:
+
+\begin{linenomath*}
+\begin{equation}
+\alpha(z,z') = \biggl\{
+\begin{matrix}
+1+\frac{(z-z')}{t^*}, & & 0 \leqslant z-z' < t^*
+\\
+1-\frac{(z-z')}{t^*}, & & -t^* < z-z' < 0
+\\
+0, &  & \text{\emph{otherwise.}}
+\end{matrix}
+\label{kernel2}
+\end{equation}
+\end{linenomath*}
+and it is a triangle function where the strength of competition decreases linearly with the difference in phenotypic values of competitors. To obtain the population growth rate for a given species, the equation (1) is integrated over the phenotypic abundance distribution of the species.
+
+\begin{linenomath*}
+\begin{equation}
+\frac{dN_i}{dt}=N_i(t)\int p_i(z,t)w_i(z,t)dz
+\label{size}
+\end{equation}
+\end{linenomath*}
+
+Trait propagation due to breeding is described using two different models of quantitative genetics. First, the quantitative genetic limit (QGL) model assumes that the trait is determined by large number of independent loci which contribute infinitesimally towards the individual’s phenotypic value. It also states that the phenotypes of a population remain normally distributed during trait evolution under selection, and that the variance of this distribution changes very little in response to selection. Thus, we employ the breeder's equation to derive the expression for the mean trait change for species i:
+
+\begin{linenomath*}
+\begin{equation}
+\frac{d\mu_i}{dt}=\frac{{h_i}^2 r_i}{K_i}\sum \limits_{j=1,i	\neq j}^{n}N_j\underbrace{ \int_z \int_{z'}(z-\mu_i)\alpha(z,z')p_i(z,t)p_j(z,t)dz'dz}_{\beta_{ij}}
+\label{mean}
+ \end{equation}
+\end{linenomath*}
+
+where $\mu_i$ is the mean phenotypic value of species \emph{i} and $h_{i}$ is the heritability of the trait. Heritability values are assumed to be constant for all the species. Note that the double integral term in the eq.5 denotes the per capita effect of pairwise competition on the directionality and the strength of trait evolution. It depends on the competition kernel as well as phenotypic distributions within the species. We further analyze the properties of this term as it is crucial in determining the theoretical conditions under which trait divergence trends may be observed.  
+
+The second model, Shpak-Kondrashov (SK) model, assumes that the trait is governed by a limited number of loci which contribute additively to the phenotypic value of an individual \cite{Shpak1999}. Phenotypic distribution of offspring from parents with two phenotypes follows an approximate hypergeometric distribution and thus allows the trait distributions to vary in its shape, mean and variance in response to selection and reproduction. In the absence of selection pressure,any arbitrary phenotypic distribution eventually converges to Normal distribution under random mating \cite{Shpak1999,yamauchi2009intraspecific}. Traits determined by higher number of loci reach the normal distribution faster. Thus, QGL model, which assumes that large number of loci govern the functional trait, effectively represents one extreme of the SK model in the absence of selection. We use numerical approach to estimate the changes in trait distribution under SK model.
+ 
+
+\subsection{Model parametrization}
+We focused on five parameters of this model that influence the competition dynamic: two of them, $\omega$ (width of competition) and $t^{*}$ (trait difference threshold to competition) describe the trait-matching model between competing individuals and determine the shape of the competition kernel (Fig. 1B). These two parameters dictate the trait-mediated mechanism between competing individuals. Higher values of ω indicate stronger competition between individuals with given trait values while the threshold values, $t^{*}$, determine whether individuals compete or not based on their trait values. Two other parameters relate to the trait distribution of the species -the number of loci governing the trait and the level of intraspecific trait variation. By varying number of loci, we represent the spectrum of underlying quantitative genetic processes of trait inheritance. Any finite number of loci determining a trait value represents the case under Shpak-Kondrashov model while the quantitative genetic limit model is assumed to represent the case where the number of loci determining a trait value is effectively infinite. Intraspecific trait variation is shown to be a critical factor in the population and evolutionary dynamic \cite{bolnick2011intraspecific,barabas2016effect}. Within our framework, the trait variation affects the species’ response to selection pressure; higher trait variance will lower the rate mean trait change for a given species. The fifth parameter, $A_{ij}$, represents the relative weight of interspecific competition compared to intraspecific competition. It is a critical parameter for the population dynamic since it can adjust the destabilizing effects of interspecific competition. We simulated population and trait dynamics of varying assemblages of competing species and assessed the combined influence of these three parameters on community level patterns.
+
+\subsection{Simulating trait, population, and community dynamics}
+For each initial assemblage of 20 species, we generated 216 distinct combinations of parameters by varying values for the 5 parameters described above in a factorial design. The threshold to competition, t*, was either non-existent (infinitely large threshold) or had three levels (stringent, intermediate, and weak). The width of competition, $\sigma$, was set to one of 0.5, 1, or 2. The standard deviation for the trait distribution of each species was chosen from one of the two uniform distributions, low: [0.5,1.5], high: [2.5,3.5]. The parameter values are chosen in reference to arbitrarily chose range of plausible phenotypic values between -5 and 5. The number of loci were either 20, 50 or infinite (represented by the QGL model), and relative interspecific competition, $A_{ij}$, was set at 0.1,0.5 or 0.9. 
+
+We incorporated these parameter combinations with 50 randomly sampled values of initial conditions for initial trait means, population sizes and intrinsic growth rates. Initial trait means were randomly sampled from a Normal distribution with mean 0. Initial population sizes and intrinsic growth rate values were sampled from random uniform distributions. Narrow-sense heritability was fixed at 0.5. These choices produced a large variation of initial network structures within each parameter set. We deliberately seeded our simulations with trait distributions that ensured that species’ traits were very similar and thus they were competing strongly at first. This scenario resembles the diversification of a clade of similar species evolving to exploit a wide niche space in a newly colonized habitat. 
+
+Each simulation was run for 50,000 generations, which ensured that the most dynamic portion of the evolutionary sequence was observed, and that the simulation reached a state of very minimal change. During the simulation, species whose populations went below zero were removed and labelled as ‘extinct’. Population and trait dynamics following the equations above were simulated in R. Two network characteristics were tracked through the simulation period: Connectance, which measures a proportion of realized pairwise interactions (weighted by the strength of interaction) to all the potential pairwise interactions in the network and maximum modularity, which measures the prevalence of subgroups within the network, which have strong interaction within themselves \cite{Newman2014}. Mean trait distribution across species was also tracked, in terms of Mean Nearest Neighborhood Distance (MNND) \cite{Findley1976}. It is an average of nearest neighbor distances (NNDs) standardized by the maximum possible average NND given the range of trait values.
+
+\section{Results}
+
+The two quantitative genetic models produced two distinct trends in trait evolution patterns, species extinctions, and trait distributions. Figure 2 demonstrates the general qualitative differences between the trait dynamics under two models.  Under the infinite loci model, species’ traits diverged gradually with time and trait differences between all pairs of species increased monotonically (Fig. 2A) leading to trait overdispersion. In contrast, under the finite loci model (SK model) the rate of trait evolution was very uneven across species. Thus, such apparent convergences between some pairs of species led to clustered trait distributions (Fig. 2B). Patterns of extinction over time also differed between different quantitative genetic models. In the infinite loci model, extinctions occur most frequently for species with extreme trait values. While extinctions also occur under the finite loci model, they are not primarily for the species with more extreme trait values. Species with more extreme trait values in the finite loci model experience sharp declines in intrinsic growth rates just as in the infinite loci model, but they take a substantially longer amount of time to become extinct. These qualitative patterns were largely robust under different combinations of other parameters (Figs. 3-5). \par
+
+Species richness declined continuously with time in the infinite loci model, while it declined much more slowly in the finite loci model (Fig. 3). The faster decay in species richness in the infinite loci model mirrors the higher extinction rate, noted above. The difference in loss of species richness between the two quantitative genetic models was robust regardless of whether competition was strong or weak, or whether there was a threshold or not. Stronger interspecific competition (higher $A_{ij}$ values) and wider competition widths resulted in greater extinction rates under all scenarios. Initial trait distributions and demographic conditions had strong impact on the extinction rates under the infinite loci model (Fig. 3A, compare the crossing lines and confidence intervals for the three competition kernels explored, $\sigma$, in Eq. 2.) Under the finite loci model, the existence of thresholds in the competitive kernel did not influence the dynamics strongly. Overall, the infinite loci model results in gradual trait divergence but more species extinctions, whereas higher species richness and convergent evolutionary trajectories result when fewer loci determine traits.\par
+
+Maximum modularity, which measures how many clusters of strongly competing species exist within a species interaction network, exhibited opposite temporal trends for the finite and infinite loci models (Fig. 4). Under the infinite loci model, modularity stayed constant at low values or declined, indicating that interspecific competition overall either stayed weak or became progressively weaker over time. Under the finite loci model, modularity rapidly converged to high values, implying that competition among species within a cluster became stronger, but competition among species in different clusters became weaker. The strength of interspecific competition and the width of the competitive kernels influenced the trends differently under the two different inheritance models. For the infinite loci model, maximum modularity decreased faster when interspecific competition was greatest. In the finite loci model, interspecific competition did not have a strong impact on modularity. This distinction reflects how interspecific competition affects the rate of extinctions differently under the two genetic models. The existence of trait thresholds to competitive kernels showed no significant effects on the dynamics of modularity.\par
+
+Dynamics of mean trait dispersion among competing species, measured as Mean Nearest Neighbor Distance (MNND), differed qualitatively between the two quantitative genetic inheritance models (Fig. 5). Under the infinite loci model, MNND values increased to values between 0.5 and 1.0 under all scenarios, indicating a progression toward a more even dispersion (i.e. overdispersion) of mean trait values. Under the finite loci model, values of MNND decreased across different scenarios to values below 0.6, indicating a strong tendency toward greater trait clustering. The rate of decline was unaffected by the initial trait variance, demographic conditions and competitive parameters. However, the decrease in MNND was influenced by the strength of interspecific competition as well as the shape of the competitive kernels. The contrast in trends is apparent between the top-left panel and the bottom-right panel under the finite loci model in Fig. 5. Competitive kernels with strong trait threshold and narrower widths interspecific competition showed deceleration in the dynamic of trait dispersions.\par
+
+In summary, the infinite and finite loci inheritance models differed markedly in the dynamics of the mean trait distributions and network structures across the community. Although the species level dynamics show highly variable patterns between simulations, these differences were robust across different parameter combinations within each scenario. \par
+
+\section{Discussion}
+
+Our results highlight that the quantitative genetic process of trait inheritance has a great influence on evolutionary trends of species under competition. Simulations of eco-evolutionary dynamics under two trait architecture models, the infinite loci model (quantitative Genetic Limit model or QGL model) and finite loci model (Shpak-Kondrashov model or SK model) showed contrasting outcomes in the community-level characteristics such as species richness, network modularity and mean trait distributions. Under the infinite loci model, trait divergence was generally observed. Altering the competitive kernels, which represents the ecological mechanisms of competition, did not change these patterns of trait divergence. However, when the trait is governed by a finite number of loci under the SK model, we observed strong deviations from trait overdispersion. Some aspects of trait dynamics under the SK model depend on the characteristics of competitive kernels, but the qualitative differences are robust to all scenarios. These deviations are the direct results of the convergent evolutionary trajectories, instances of which are observed in Fig. 2b. \par
+
+Trait divergence and convergence highlight a simple but crucial mechanism regarding competition beyond two species, i.e., diffuse or indirect competition. Within our framework, if only a single pair of species were competing, their respective traits will always diverge. However, in a multispecies scenario, it is possible to observe a pair of species to converge if the combined effect of pairwise competitions is stronger than the strength imposed by the rest of the species in the community. Fig. 1 illustrates two scenarios where an identical species assemblage can exhibit contrasting trait trends. The expression $\beta_{ij}$ (eq. 5) dictates an impact of pairwise competition on the trait evolution of a given pair of species. Fig. 1 shows that the shape characteristics of the $\beta_{ij}$ depend on trait distributions of species as well as competition kernel function. If the competitive kernel is symmetric, this function is always antisymmetric around the origin. In scenario 1 of Fig. 1, normally distributed traits along with a truncated Gaussian competition kernel leads to conditions such that the combined effect of the diffuse competition becomes weaker than the mutual repulsive effect between a pair of species (Scenario 1, panel C). In such scenario, it is highly unlikely to observe convergent trait evolution. In contrast, populations with uniformly distributed traits in scenario 2 allow the influence of diffuse competition to overpower the mutual repulsive selective force between a pair of species leading to a convergent evolution(Scenario 2, panel C). Although, the event of convergent evolution between two species depends on the relative “positions” of other species along the trait axis, thus being idiosyncratic, its likelihood is modulated by the shape characteristics of the function. Infinite loci model of trait inheritance ensures that the traits remain robustly normally distributed under weak selection while the finite loci model allows the traits to deviate from normality thus allowing the possibility of convergent evolutionary trajectories. This great impact of the quantitative genetic inheritance processes is highly evident in the community-level patterns (Figs. 3, 4 and 5). \par
+
+The Shpak-Kondrashov model, although simplistic, is employed to provide a dynamically sufficient contrast to the QGL model\cite{Shpak1999}. It assumes that the traits are governed by limited number of loci and the inherited traits are sampled from a hypergeometric distribution parameterized with parental phenotypic frequencies. Under this model, an arbitrary trait distribution is feasible even though it converges to normal distribution under a pure inheritance process with random mating. However, under directional selection, the traits may not fully converge to normality and thus allow the convergent trait evolution to occur between pairs of competing species. These expectations are evident in our simulation outcomes under the SK model, where increasing modularity in networks and decreasing Mean Nearest Neighbor distances indicate the prevalence of convergent trait evolution. Interestingly, changing the forms of competitive kernels did not show a strong marginal effect on the qualitative nature of the evolutionary dynamic. Width of the competition kernel and the trait thresholds determine the overall level of competition a species experiences from the other species. Thus, these parameters modulate the selection pressure caused by competition and can accelerate or decelerate evolutionary trends. Also, they modulate the negative impact of competition on population growth, influencing the extinction rate, which in turn, affects the community level trait and network patterns. Therefore, the parameters related to the competition kernel play a complex role in an overall eco-evolutionary dynamic under the finite loci model.\par
+
+These results have important implications for the empirical research that attempts to explain community level patterns of network structures and trait distributions. When a single time snapshot of a community with a particular trait composition is studied, an overdispersion of traits of closely related species is taken as an evidence of competition \cite[][etc.]{kraft2010functional,baraloto2012using,lessard2012inferring}. However, the absence of trait overdispersion does not necessarily imply that competitive interactions had an insignificant effect, and such an inference requires further support \cite{mayfield2010opposing,barabas2016effect}. Indeed, multiple analyses have suggested that alternative outcomes could result depending on the nature of competition, resource use characteristics, stochasticity, and environmental fluctuations \cite[e.g.][]{Abrams1983,Roughgarden1983,macarthur1967limiting}. Trait clustering has also been shown in prior models when communities were initially saturated with species and allowed to prune through extinction (\cite{Scheffer2006}. Our results show that such trait clustering also arises from evolutionary dynamics of arbitrarily assembled communities when the underlying architecture of the quantitative genetic processes allow it.\par
+
+Importantly, we also elucidated the critical role of trait distributions in eco-evolutionary dynamics, which lends strong support to the multiple previous studies emphasizing the need to incorporate information about intraspecific trait variations in the study designs \cite[e.g.][]{bolnick2011intraspecific}. Traits are often normally distributed within species. In such cases, the infite loci model (Quantitative Genetic Limit (QGL) model) provides robust and dynamically sufficient representation of quantitative genetics processes. It therefore might be fair to expect the general trend of trait overdispersion across communities, even though intraspecific trait variation levels do influence the coexistence patterns (Fig. 3-5). However, such expectations may break down significantly in case of rare species influenced by strong genetic drift, if underlying genetic architecture shows strong linkages, or if the populations are structured \cite{Barton2017}. We chose the SK model, as an instance which provides a contrast to Quantitative Genetic Limit (QGL) model in terms of the potentials of trait distribution shapes and their inheritance. Such deviations may not follow a quantitative genetic process as simplified as the SK model but if they cause the trait distributions deviate from Gaussian shapes, deviations from trait overdispersion or strong persistent interactions may be observed within communities.\par
+
+Understanding the characteristics of the competition kernels can be highly informative in predicting the ecological or evolutionary outcomes of competition given a model of inheritance. The shape of such kernels has rarely been characterized in natural communities. Competitive kernels address the mechanisms behind how competition arises, and their shapes might capture the context specific to study systems. Such mechanisms could be addressed by analyses of resource utilization among consumer guilds and functional approaches that account for physical constraints on resource use. While we analysed only the symmetric kernels, it is possible that other types of functions could strongly affect the eco-evolutionary dynamic.\par 
+
+In this framework, we assumed that the competition occurs along a one-dimensional niche represented by a single trait across competitors. But this framework can be expanded to consider multi-dimensional niches and still fundamentally address how different competitive kernel functions and how a given trait inheritance model influence the evolutionary dynamics. We also use a Lotka-Volterra framework which does not consider more than second order effects of population sizes on their growth rate. However, the outcomes remain robust near equilibrium conditions. Thus, even though the model is simplistic,  the fundamental mechanisms involving trait architecture, trait distributions and competitive kernels that lead to different evolutionary patterns are general enough to study the impact of the genetic architecture of ecological traits on the assembly patterns of species-rich communities.
+
+
+\newpage
+
+\bibliographystyle{ecol_let}
+\bibliography{refs.bib}
+ 
+\newpage
+
+\section{Tables}
+
+\begin{table}[!ht]
+\caption{Parameters and variables}
+\begin{center}
+ \hspace{-0.25 in}\begin{tabular}{||c| c| c||} 
+ \hline
+ \textbf{Symbol} & \textbf{Concept} & \textbf{Value} 
+ \\ [0.5ex] 
+ \hline\hline
+  & {\bf Parameters} &
+  \\
+  \hline
+ $A_{ij}$ & Overall effect of competition between sp. $i$ and $j$ & $[0,1]
+ \\ 
+ \hline
+ $r_{i}$ & Intrinsic growth rate of species i & values 
+ \\ 
+ \hline
+ $\sigma$ & Width of a Gaussian competition kernel & Eq.~\ref{kernel2}
+ \\
+ \hline
+ $h_{i}$ & Heritability coefficient of the trait species $i$ & 
+ \\
+ \hline
+ & {\bf Variables} & 
+  \\
+  \hline
+ $\omega_{i}(z,t)$ & Fitness of individual with trait z species $i$ & Eq.~\ref{fitness}
+ \\
+ \hline 
+ $p_i(z,t)$ & Probability density of a phenotype \emph{z} for species \emph{i} &  
+ \\
+ \hline
+ $\alpha$(z,z')$ & Competition kernel $z$ and $z\’$ values &  Eqs.~\ref{kernel1} and ~\ref{kernel2}
+ \\
+  \hline
+ $N_{i}$ & Population size of species $i$ & Eq.~\ref{size}
+  \\
+ \hline
+ $\mu_i$ &  Mean phenotypic value of species $i$ &  Eq.~\ref{mean}
+  \\
+ \hline
+  $\beta$(\Delta\mu)$ & Mean trait change due to  pairwise competition  &  Eq.~\ref{mean} 
+ \\
+  \hline
+\end{tabular}
+\label{table_symbols}
+\end{center}
+\end{table}
+
+\newpage
+\section{Figure caption}
+
+\noindent Figure 1: Model illustration at {\bf A}) Individual, {\bf B}) Population and {\bf C}) Community levels with two scenarios: Scenario 1: {\bf A}) The competition kernel (inset), $\alpha$, is a Gaussian function of trait differences and the traits are Normally distributed as well (Taper and Case, 1983). {\bf B}) The population level rate of trait change (y-axis) for a given species as a results of two-species competition. In this scenario, species diverge since species with higher trait mean increases its mean trait and vice-versa. {\bf C}) Under the influence of competition between multiple species (black, red, and green dots), species represented by green and red circles show decreasing and increasing their mean trait values, respectively. Scenario 2: {\bf A}) The competition kernel (inset), alpha, is now a triangular function and traits of competing species are uniformly distributed. {\bf B}) In this scenario, both species show divergent evolution as well. However, in {\bf C}) under multispecies competition, convergent evolution occurs between the green and red species event because for this particular case the sum of all the pairwise effects towards convergence is larger than the divergence produced by the direct competition. Note that in both scenarios, community composition is identical in terms of species' mean traits.
+
+\noindent Figure 2: Sample outcomes of simulations under two quantitative genetic models, (A) QGL and (B) SK model. Both the plots show the evolution of mean trait values of 20 competing species with a truncated Gaussian competition kernel (Threshold=1, Width of competition=1) for 10000 generations.  The thickness of the trajectories represents the relative population sizes of the species at the given time. The ends of the trajectories before the final time steps indicate the extinction events.
+
+\noindent Figure 3: Temporal trends in species richness of competing community are shown under two quantitative genetic processes (QG and SK model) and with different shapes of competitive kernels. The columns in each panel represent the sets of simulations with different thresholds to the Gaussian competition kernels. The rows from both the panels indicate the strength of interspecific competition relative to intraspecific competition. Within each plot, three different colored trajectories represent different widths of Gaussian kernels.
+
+\noindent Figure 4: Temporal trends in maximum modularity of competitive networks is shown under two quantitative genetic processes (QG and SK model with 20 loci) and with different shapes of competitive kernels. The columns in each panel represent the sets of simulations with different thresholds to the Gaussian competition kernels. The rows from both the panels indicate the strength of interspecific competition relative to intraspecific competition. Within each plot, three different colored trajectories represent different widths of Gaussian kernels. Each trajectory has a bold line representing the mean values across 20 replicates that represent varying initial demographic conditions. Range around the bold lines with faded colors should variation one standard deviation around the mean.  
+
+\noindent Figure 5: Temporal trends in trait dispersion patterns (Mean Nearest Neighbor distance) of trait means is shown under two quantitative genetic processes (QG and SK model with 20 loci) and with different shapes of competitive kernels. The columns in each panel represent the sets of simulations with different thresholds to the Gaussian competition kernels. The rows from both the panels indicate the strength of interspecific competition relative to intraspecific competition. Within each plot, three different colored trajectories represent different widths of Gaussian kernels. Each trajectory has a bold line representing the mean values across 20 replicates that represent varying initial demographic conditions. Range around the bold lines with faded colors should variation one standard deviation around the mean. 
+
+
+\section{Figures}
+
+\begin{figure}[htb!]
+\includegraphics[width=17cm,height=12cm]{Figures/figure1.png}
+\caption{}
+\label{fig:cartoon}
+\end{figure}
+
+\begin{figure}[htb!]
+\hspace{-1 in}\includegraphics[width=20cm,height=16cm]{Figures/figure2.eps}
+\caption{}
+\label{fig:cartoon}
+\end{figure}
+
+\begin{figure}[htb!]
+\hspace{-0.75 in}\includegraphics[width=20cm,height=16cm]{Figures/figure3.eps}
+\caption{}
+\label{fig:cartoon}
+\end{figure}
+
+\begin{figure}[htb!]
+\hspace{-1 in}\includegraphics[width=20cm,height=16cm]{Figures/figure4.eps}
+\caption{}
+\label{fig:cartoon}
+\end{figure}
+
+\begin{figure}[htb!]
+\hspace{-1 in}\includegraphics[width=20cm,height=16cm]{Figures/figure5.eps}
+\caption{}
+\label{fig:cartoon}
+\end{figure}
+
+%\begin{figure}[htb!]
+%\includegraphics[width=17cm,height=12cm]{Figures/SK_mnnd3.png}
+%\caption{}
+%\label{fig:cartoon}
+%\end{figure}
+
+\newpage
+
+
+
+
+\end{document}
