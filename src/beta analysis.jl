@@ -1,4 +1,4 @@
-using CSV, DataFrames, Random, LinearAlgebra, Distances, Distributions, SpecialFunctions, Plots
+using CSV, DataFrames, Random, LinearAlgebra, Distances, Distributions, SpecialFunctions, Plots, StatsPlots
 
 #Necessary functions
 
@@ -90,6 +90,60 @@ function qgprob(n::Int64)
     return R
 end
 
+function singlegen_comp(Ns::Matrix{Float64},
+                        genos::Matrix{Float64},
+                        omega::Float64,
+                        t::Float64,
+                        )
+
+    (nsp,nt)=size(Ns)
+
+    Ns= Ns ./ sum(Ns,dims=2)
+
+    A=zeros(Float64,nsp,nt,nsp,nt)
+    for j1 in 1:nsp, j2 in 1:nt, j3 in 1:nsp, j4 in 1:nt
+        if(j1 != j3)
+            A[j1,j2,j3,j4]=alpha_gt(genos[j1,j2],genos[j3,j4],omega,t)
+        end
+    end
+
+    comps=zeros(Float64,nsp,nt)
+    for j5 in 1:nsp, j6 in 1:nt
+        comp=0.0
+        for j7 in 1:nsp, j8 in 1:nt
+            comp = comp + A[j5,j6,j7,j8]*Ns[j5,j6]*Ns[j7,j8]
+        end
+        comps[j5,j6]=comp
+    end
+    comps=comps ./ [maximum(comps[x,:]) for x in 1:nsp]      
+    Ns=Ns .* (1 .- comps)
+
+    return Ns
+end
+
+function singlegen_comp2(Ns::Matrix{Float64},
+                        genos::Matrix{Float64},
+                        A::Array{Float64,4}
+                        )
+
+    (nsp,nt)=size(Ns)
+
+    Ns= Ns ./ sum(Ns,dims=2)
+
+    comps=zeros(Float64,nsp,nt)
+    for j5 in 1:nsp, j6 in 1:nt
+        comp=0.0
+        for j7 in 1:nsp, j8 in 1:nt
+            comp = comp + A[j5,j6,j7,j8]*Ns[j5,j6]*Ns[j7,j8]
+        end
+        comps[j5,j6]=comp
+    end
+    comps=comps ./ [maximum(comps[x,:]) for x in 1:nsp]      
+    Ns=Ns .* (1 .- comps)
+
+    return Ns
+end
+
 function single_sim(r,K,a1,A,R,Ng0,Npop)
     
         Np0=Ng0 .*Npop
@@ -150,167 +204,6 @@ function single_sim(r,K,a1,A,R,Ng0,Npop)
     return dat
     
 end
-
-function single_sim1(steps,r,K1,K2,a1,A,R,Ng0,Npop)
-
-    nsp=size(Ng0)[1]
-    nt=size(Ng0)[2]
-        
-    Np0=Ng0 .*Npop
-    Ngen=deepcopy(Ng0)
-    Np=deepcopy(Np0)
-    
-    dat=zeros(Float64,steps+1,nsp,nt)
-    dat[1,:,:]=Np
-        
-    #Start the simulation
-    for m in 2:(steps+1)
-    
-        #Determine the extinct species
-        Np[findall(sum(Np,dims=2) .< 10),:] .= 0
-        Ngen[findall(sum(Np,dims=2) .==0),:] .= 0
-
-        if all(sum(Np,dims=2) ==0) 
-            break
-        else
-            newgen=zeros(Float64,nsp,nt)
-
-            #Reproduction event
-            for i in findall(!iszero,sum(eachcol(Ngen)))
-                
-                probs=Ngen[i,:]*Ngen[i,:]'
-                
-                newgen[i,:]=[sum(probs.*R[:,:,x1]) for x1 in 1:nt]
-                
-                newgen[i,:] ./= sum(newgen[i,:])
-                    
-            end
-
-            newgen .*= sum(Np,dims=2)
-
-            #Selection event
-            
-            if size(A)[1]>1
-
-                for i1 in 1:size(newgen)[1]
-                
-                    #Reduction in growth rate due to intraspecific competition (not trait-dependent!). The carrying capacity
-                    #here is assumed to be the same for all species.
-
-                    rdash=r[i1] * (1 -(sum(newgen[i1,:])/K1[i1]))
-                    
-                    #Impact of interspecific competition
-
-                    comps=[(a1.*sum((A[x2,:]) .* newgen[1:end .!=i1,:]')) for x2 in 1:nt]
-                    
-                    Np[i1,:] = newgen[i1,:] + (newgen[i1,:] .* rdash .* (1 .-(comps ./K2)))
-                    
-                end
-                
-            end
-
-            Np[findall(Np .<1)] .= 0
-            Ngen= Np ./ sum(Np,dims=2)
-            Ngen[isnan.(Ngen)].=0
-        end
-            
-        dat[m,:,:]=Np
-            
-    end
-
-    result=DataFrame()
-
-    for i in 1:nsp
-
-        append!(result,DataFrame(species=i,
-                                time=1:steps,
-                                N=[sum(dat[x,i,:]) for x in 1:steps],
-                                trmean=[sum(dat[x,i,:] .* geno)/sum(res[x,i,:])  for x in 1:tstep]))
-    end
-
-    return result
-    
-end
-
-function single_sim12(steps,r,K1,K2,a1,A,R,Ng0,Npop,samples)
-
-    nsp=size(Ng0)[1]
-    nt=size(Ng0)[2]
-    geno=collect(range(-1.0,stop=1.0,length=nt))
-        
-    Np0=Ng0 .*Npop
-    Ngen=deepcopy(Ng0)
-    Np=deepcopy(Np0)
-
-    result=DataFrame()
-        
-    #Start the simulation
-    for m in 1:steps
-    
-        #Determine the extinct species
-        Np[findall(sum(Np,dims=2) .< 10),:] .= 0
-        Ngen[findall(sum(Np,dims=2) .==0),:] .= 0
-
-        if all(sum(Np,dims=2) ==0) 
-            break
-        else
-            newgen=zeros(Float64,nsp,nt)
-
-            #Reproduction event
-            for i in findall(!iszero,sum(eachcol(Ngen)))
-                
-                probs=Ngen[i,:]*Ngen[i,:]'
-                
-                newgen[i,:]=[sum(probs.*R[:,:,x1]) for x1 in 1:nt]
-                
-                newgen[i,:] ./= sum(newgen[i,:])
-                    
-            end
-
-            newgen .*= sum(Np,dims=2)
-
-            #Selection event
-            
-            if size(A)[1]>1
-
-                for i1 in 1:size(newgen)[1]
-                
-                    #Reduction in growth rate due to intraspecific competition (not trait-dependent!). The carrying capacity
-                    #here is assumed to be the same for all species.
-
-                    rdash=r[i1] * (1 -(sum(newgen[i1,:])/K1[i1]))
-                    
-                    #Impact of interspecific competition
-
-                    comps=[(a1.*sum((A[x2,:]) .* newgen[1:end .!=i1,:]')) for x2 in 1:nt]
-                    
-                    Np[i1,:] = newgen[i1,:] + (newgen[i1,:] .* rdash .* (1 .-(comps ./K2)))
-                    
-                end
-                
-            end
-
-            Np[findall(Np .<1)] .= 0
-            Ngen= Np ./ sum(Np,dims=2)
-            Ngen[isnan.(Ngen)].=0
-        end
-
-        if m ∈ samples
-
-            append!(result,
-                    DataFrame(time=m,
-                       sp=1:nsp,
-                       pop=pop=vec(sum(Np,dims=2)),
-                       trmean=[sum(Ngen[x,:] .* geno) for x in 1:size(Ngen)[1]]))
-
-        end
-            
-    end
-
-    return result
-    
-end
-
 
 function single_sim2(steps,r,K,a1,genos,A,R,Ng0,Npop,samples)
 
@@ -564,6 +457,7 @@ kernelp
 #Demonstrate when convergence occurs
 ############################################################################
 
+
 # 3 species case
 
 #Premise: We first fix the trait distributions of species A. We then vary mean traits of species B and C
@@ -572,17 +466,158 @@ kernelp
 #Different comp. kernel functions do not seem to have qualitative effect on evolutionary dynamics. So,
 # at this point, we will just use truncated Gaussian kernels.
 
+#Trial run
+
+nsp=3
+n=10
+dist="Gaussian"
+omega=0.25
+t=0.5
+
+nt=2*n + 1
+
+t1s=-1.0:0.05:0.0
+t2s=0.0:0.05:1.0
+trsets=collect(Iterators.product(t1s,t2s))
+
+res=DataFrame()
+
+for i in 1:length(trsets)
+
+    trmeans=[trsets[i][1],0.0,trsets[i][2]]
+
+    #Assigning trait distributions around given means for 3 species.
+    genos=zeros(Float64,nsp,nt)
+    for i in 1:nsp
+        genos[i,:]=collect(range(trmeans[i]-0.5,trmeans[i]+0.5,length=nt))
+    end
+
+    Ns=zeros(Float64,nsp,nt)
+    if dist=="Gaussian"
+        [Ns[x,:]=pdf.(truncated(Normal(trmeans[x],0.2),trmeans[x]-0.5,trmeans[x]+0.5),genos[x,:]) for x in 1:nsp]
+    elseif dist=="Uniform"
+        [Ns[x,:]=pdf.(Uniform(trmeans[x]-0.4,trmeans[x]+0.4),genos[x,:]) for x in 1:nsp]
+    end
+    Ns= Ns ./ sum(Ns,dims=2)
+
+    Ns=singlegen_comp(Ns,genos,omega,t)
+
+    newmeans=[sum(genos[x,:] .* Ns[x,:])/sum(Ns[x,:]) for x in 1:nsp]
+
+    diffs=diff(newmeans)-diff(trmeans)
+
+    append!(res,DataFrame(sp1=trmeans[1],sp3=trmeans[3],diff1=diffs[1],diff2=diffs[2]))
+
+end
+
+heatmap(string.(t2s),
+        reverse(string.(t1s)),
+        reshape(res.diff1,length(t1s),length(t2s)),
+        clim=(-0.5,0))
+
+
+#######################################################################################################
+#Iterate over trait sets and trait distributions in different shapes determined by beta distributions
+
+nsp=3
+n=10
+omega=0.25
+t=0.5
+nt=2*n + 1
+
+as=[1,3,5,10]
+bs=[1,3,5,10]
+beta_pars=collect(Iterators.product(as,bs))
+
+t1s=-0.95:0.05:0.0
+t2s=0.05:0.05:1.0
+trsets=collect(Iterators.product(t1s,t2s))
+
+res=DataFrame()
+
+for i in 1:length(trsets)
+
+     trmeans=[trsets[i][1],0.0,trsets[i][2]]
+
+    #Assigning trait distributions around given means for 3 species.
+    genos=zeros(Float64,nsp,nt)
+    for i in 1:nsp
+        genos[i,:]=collect(range(trmeans[i]-0.5,trmeans[i]+0.5,length=nt))
+    end
+
+     A=zeros(Float64,nsp,nt,nsp,nt)
+    for j1 in 1:nsp, j2 in 1:nt, j3 in 1:nsp, j4 in 1:nt
+        if(j1 != j3)
+            A[j1,j2,j3,j4]=alpha_gt(genos[j1,j2],genos[j3,j4],omega,t)
+        end
+    end
+
+    for j in 1:length(beta_pars)
+        
+        Ns=zeros(Float64,nsp,nt)
+        [Ns[x,:]=pdf.(Beta(beta_pars[j][1],beta_pars[j][1]),genos[x,:] .- minimum(genos[x,:])) for x in 1:nsp]
+        Ns= Ns ./ sum(Ns,dims=2)
+
+        Ns=singlegen_comp(Ns,genos,omega,t)
+        newmeans=[sum(genos[x,:] .* Ns[x,:])/sum(Ns[x,:]) for x in 1:nsp]
+
+        diffs=diff(newmeans)-diff(trmeans)
+
+        append!(res,
+                DataFrame(
+                    sp1=trmeans[1],
+                    sp3=trmeans[3],
+                    alpha=beta_pars[j][1],
+                    beta=beta_pars[j][2],
+                    diff=diffs[1]
+                ))
+    end
+end
+
+plist=[]
+for k in 1:length(beta_pars)
+
+    res0=res[res.alpha .== beta_pars[k][1] .&& res.beta .== beta_pars[k][2],:]
+    betadat=pdf.(Beta(beta_pars[k][1],beta_pars[k][2]),0:0.01:1)
+    betadat ./= sum(betadat)
+
+    pl0=heatmap(string.(t2s),
+        reverse(string.(t1s)),
+        reshape(res0.diff,length(t1s),length(t2s)),
+        clim=(-0.5,0),
+        title=string("α=",beta_pars[k][1],", β=",beta_pars[k][2]))
+
+    plot!(betadat,
+        ylim=(0,1.2*maximum(betadat)),
+        ticks=false,
+        legend=false,
+        frame=:box,
+        inset=bbox(0.1, 0.1, 0.3, 0.3, :top, :left),
+        subplot=2,
+        bg_inside=nothing)
+
+    push!(plist,pl0)
+end
+
+
+plot(plist...,layout=(4,4))
+
+
+
+#########################################################################################
+#Run a full set
+
+
 #Parameters to vary: 1. #loci, 2. kernel omega 3. comp. threshold 3. Trait distributions
 nsp=3  #No. of species
 ns=[3,5,7,10,20] #No. of loci
 #kernel=["Gaussian","Triangle"]
 omegas=collect(0.05:0.2:1.0)
 ts=collect(0.1:0.2:0.8)
-dists=["Gaussian","Uniform"]
+dists=["Gaussian"]
 a1s=[0.0,0.00001,0.0001,0.001,0.01]
-reps=50
-t1s=-0.6:0.05:0.0
-t2s=0.0:0.05:0.6
+t1s=-1.0:0.05:0.0
+t2s=0.0:0.05:1.0
 trsets=collect(Iterators.product(t1s,t2s))
 
 res=DataFrame()
@@ -601,7 +636,7 @@ for i1 in ns, i2 in dists, i3 in omegas, i4 in ts, i5 in 1:length(trsets)
     Ns=zeros(Float64,nsp,nt)
 
     if i2=="Gaussian"
-        [Ns[x,:]=pdf.(truncated(Normal(trmeans[x],0.2),-1.0,1.0),genos[x,:]) for x in 1:nsp]
+        [Ns[x,:]=pdf.(truncated(Normal(trmeans[x],0.2),trmeans[x]-0.5,trmeans[x]+0.5),genos[x,:]) for x in 1:nsp]
     elseif i2=="Uniform"
         [Ns[x,:]=pdf.(Uniform(trmeans[x]-0.4,trmeans[x]+0.4),genos[x,:]) for x in 1:nsp]
     end
@@ -628,23 +663,25 @@ for i1 in ns, i2 in dists, i3 in omegas, i4 in ts, i5 in 1:length(trsets)
 
     diffs=diff(newmeans)-diff(trmeans)
 
-    append!(res,DataFrame(rep=i5,loci=i1,dist=i2,omega=i3,t=i4,sp1=trmeans[1],
+    append!(res,DataFrame(loci=i1,dist=i2,omega=i3,t=i4,sp1=trmeans[1],
                         sp3=trmeans[3],diff1=diffs[1],diff2=diffs[2]))
 end
 
-CSV.write("3sp_test6.csv",res)
-
+CSV.write(string("D:\\project_files\\comp_coevol\\data\\","3sp_test_gaus.csv"),res)
 
 ####################################
 #Trial run
 
-nsp=5
-n=5
-omega=0.2
-t=0.5
+#########################################333
+#Trial 1: Run without 
+
+nsp=10
+n=10
+omega=0.5
+t=0.2
 R=qgprob(n)
 nt=2*n + 1
-a1=0.1
+a1=1.0
 
 #Set up trait distributions of species populations
 #Each population has #nt discrete phenotypes centered around a specific trait value. Under no selection pressure, populations' trait means converge to this value.
@@ -690,7 +727,7 @@ initd
 steps=5000 #keep 1000 at minimum
 samples=[collect(1:9); collect(10:10:100); collect(100:100:steps)]
 
-res0=single_sim3(steps,r,K,a1,genos,A,R,Ng0,Npop,samples)
+res0=single_sim2(steps,r,K,a1,genos,A,R,Ng0,Npop,samples)
 
 trdat0=zeros(Float64,size(res0)[1],size(res0)[2])
 popdat0=zeros(Float64,size(res0)[1],size(res0)[2])
@@ -705,11 +742,10 @@ plot([0;samples],trdat0,
 
 
 anim= @animate for i in 1:size(res0)[1]
-        plot(res0[i,:,:])
+        plot(genos,res0[i,:,:]')
     end
 
 gif(anim,fps=2)
-
 
 
 #################################################################################
@@ -751,21 +787,4 @@ Ng0=zeros(Float64,nsp,nt)
 rands=rand(Uniform(-0.6,0.6),nsp)
 [Ng0[i,:]=pdf.(truncated(Normal(rands[i],0.2),-1.0,1.0),geno) for i in 1:nsp]
 Ng0=Ng0 ./ sum(Ng0,dims=2)
-
-
-tsteps=5000
-res1=getsum(tsteps,r,K1,K21,0.1,A,R,Ng0,Npop)
-pop1=res1[1]
-trdat1=res1[2]
-
-df1=stack(DataFrame(trdat1,:auto))
-df1.time=repeat(0:tsteps,outer=nsp)
-df1.species=repeat(1:nsp,inner=1+tsteps)
-df1=df1[:,[:time,:species,:value]]
-
-
-plot(df1.time,df1.value,
-    group=df1.species)
-
-
 
